@@ -1,6 +1,6 @@
 {
     "host": "0.0.0.0",
-    "port": 5001,
+    "port": 5000,
     "debug": false,
     "max_file_size": 524288000,
     "request_timeout": 30,
