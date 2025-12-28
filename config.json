@@ -1,0 +1,55 @@
+{
+    "host": "0.0.0.0",
+    "port": 5001,
+    "debug": false,
+    "max_file_size": 524288000,
+    "request_timeout": 30,
+    "log_level": "ERROR",
+    "cors_origins": "*",
+    
+    "download": {
+        "base_dir": "D:\\music",
+        "max_concurrent": 3,
+        "default_quality": "lossless",
+        "include_lyric": true
+    },
+    
+    "music_download": {
+        "sub_dir": "",
+        "max_concurrent": 3
+    },
+    
+    "playlist_download": {
+        "sub_dir": "AA歌单",
+        "max_concurrent": 3,
+        "default_quality": "lossless",
+        "include_lyric": true
+    },
+    
+    "artist_download": {
+        "sub_dir": "",
+        "max_concurrent": 3,
+        "default_quality": "lossless",
+        "default_limit": 50,
+        "default_match_mode": "exact_single",
+        "include_lyric": true,
+        "search_page_size": 100,
+        "log_file_pattern": "artist_download_{timestamp}.log"
+    },
+    
+    "database": {
+        "db_path": "downloads.db",
+        "recent_downloads_limit": 50
+    },
+    
+    "cookie": {
+        "cookie_file": "cookie.txt",
+        "qr_login_max_attempts": 60
+    },
+    
+    "api": {
+    },
+    
+    "debug_config": {
+    }
+}
