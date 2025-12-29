@@ -2,13 +2,14 @@ version: '3.8'
 
 services:
   music-downloader:
-    build: .
+    image: adolphicky/auto-music
     ports:
-      - "5000:5000"  # 后端API
-      - "3000:3000"  # 前端界面
+      - "34303:3000"  # 前端界面
     volumes:
       - ./downloads:/app/downloads  # 挂载下载目录
-      - ./config.json:/app/config.json  # 挂载配置文件
+      - ./config.json:/app/config.json  # 挂载配置文件(可选)
+      - ./cookie.txt:/app/cookie.txt  # 挂载Cookie文件(可选)
+      - ./logs:/var/log/supervisor  # 挂载日志目录(可选)
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
