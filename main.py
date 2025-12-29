@@ -340,20 +340,43 @@ def health_check():
 def get_qr_code():
     """获取登录二维码API"""
     try:
-        api_service.logger.info("生成登录二维码")
+        # 记录详细的请求信息
+        api_service.logger.info(
+            f"二维码生成请求 - 客户端IP: {request.remote_addr}, "
+            f"User-Agent: {request.headers.get('User-Agent', 'Unknown')}, "
+            f"请求时间: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+        
+        api_service.logger.info("开始生成登录二维码...")
         
         # 生成二维码信息
         qr_result = qr_login_client.qr_manager.create_qr_login()
         
+        # 记录二维码生成结果
         if qr_result and qr_result.get('success'):
+            qr_key = qr_result.get('data', {}).get('qr_key', '未知')
+            qr_url = qr_result.get('data', {}).get('qr_url', '未知')
+            api_service.logger.info(
+                f"二维码生成成功 - QR Key: {qr_key}, "
+                f"二维码URL: {qr_url}, "
+                f"生成时间: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
             # 直接返回create_qr_login的结果
             return APIResponse.success(qr_result, "二维码生成成功")
         else:
             error_msg = qr_result.get('message', '二维码生成失败') if qr_result else '二维码生成失败'
+            api_service.logger.error(
+                f"二维码生成失败 - 错误信息: {error_msg}, "
+                f"失败时间: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
             return APIResponse.error(error_msg, 500)
             
     except Exception as e:
-        api_service.logger.error(f"生成二维码异常: {e}\n{traceback.format_exc()}")
+        api_service.logger.error(
+            f"生成二维码异常 - 异常信息: {e}, "
+            f"异常时间: {time.strftime('%Y-%m-%d %H:%M:%S')}, "
+            f"堆栈跟踪: {traceback.format_exc()}"
+        )
         return APIResponse.error(f"生成二维码异常: {str(e)}", 500)
 
 
