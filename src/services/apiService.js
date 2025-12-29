@@ -12,7 +12,6 @@ const apiClient = axios.create({
 // 请求拦截器
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`API请求: ${config.method?.toUpperCase()} ${config.url}`)
     return config
   },
   (error) => {
@@ -30,8 +29,6 @@ apiClient.interceptors.response.use(
     
     // 检查是否是cookie失效错误
     if (error.response && error.response.data && error.response.data.error_code === 'COOKIE_EXPIRED') {
-      console.log('检测到Cookie失效，需要重新登录')
-      
       // 显示重新登录提示
       if (typeof window !== 'undefined' && window.showGlobalMessage) {
         window.showGlobalMessage('Cookie已失效，请重新扫码登录', 'error', 5000)

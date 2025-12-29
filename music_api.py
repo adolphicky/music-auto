@@ -1003,12 +1003,9 @@ class NeteaseAPI:
                             existing_ids.add(item['id'])
                             new_playlists_count += 1
                     
-                    print(f"分类 '{category}' 第{page+1}页获取到{len(current_playlists)}个歌单，新增{new_playlists_count}个，当前总数: {len(playlists)}")
-                    
                     # 检查是否达到限制
                     if limit is not None and len(playlists) >= limit:
                         playlists = playlists[:limit]
-                        print(f"达到限制{limit}，停止获取")
                         return playlists
                     
                     offset += page_size

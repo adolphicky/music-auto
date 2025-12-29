@@ -979,26 +979,10 @@ def api_info():
 def start_api_server():
     """启动API服务器"""
     try:
-        print("\n" + "="*60)
         print("🚀 网易云音乐API服务启动中...")
-        print("="*60)
         print(f"📡 服务地址: http://{config.host}:{config.port}")
         print(f"📁 下载目录: {api_service.downloads_path.absolute()}")
         print(f"📋 日志级别: {config.log_level}")
-        print("\n📚 API端点:")
-        print(f"  ├─ GET  /health              - 健康检查")
-        print(f"  ├─ POST /song                - 获取歌曲信息")
-        print(f"  ├─ POST /search              - 搜索音乐")
-        print(f"  ├─ POST /playlist            - 获取歌单详情")
-        print(f"  ├─ POST /album               - 获取专辑详情")
-        print(f"  ├─ POST /download            - 下载音乐")
-        print(f"  ├─ POST /playlist/download   - 歌单批量下载")
-        print(f"  ├─ POST /artist/download     - 歌手歌曲批量下载")
-        print(f"  ├─ POST /hot/playlists       - 热门歌单发现")
-        print(f"  └─ GET  /api/info            - API信息")
-        print("\n🎵 支持的音质:")
-        print(f"  standard, exhigh, lossless, hires, sky, jyeffect, jymaster")
-        print("="*60)
         print(f"⏰ 启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         print("🌟 服务已就绪，等待请求...\n")
         
@@ -1011,7 +995,7 @@ def start_api_server():
         )
         
     except KeyboardInterrupt:
-        print("\n\n👋 服务已停止")
+        print("\n👋 服务已停止")
     except Exception as e:
         api_service.logger.error(f"启动服务失败: {e}")
         print(f"❌ 启动失败: {e}")
