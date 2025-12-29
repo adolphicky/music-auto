@@ -1292,9 +1292,9 @@ class QRLoginManager:
             img_str = base64.b64encode(buffer.getvalue()).decode()
             qr_url = f"data:image/png;base64,{img_str}"
             
-            # 在控制台显示二维码（可选）
-            qr.print_ascii(tty=True)
-            print("\n请使用网易云音乐APP扫描上方二维码登录")
+            # 在控制台显示二维码（可选）- 移除TTY依赖
+            # qr.print_ascii(tty=True)  # 在Docker环境中会导致"Not a tty"错误
+            # print("\n请使用网易云音乐APP扫描上方二维码登录")
             
             return {
                 'success': True,
