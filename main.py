@@ -306,9 +306,12 @@ def handle_internal_error(e):
 
 
 @app.route('/')
-def index() -> str:
-    """首页路由"""
-    return render_template('index.html')
+def index() -> Response:
+    """首页路由 - 重定向到前端服务器"""
+    return Response(
+        '<html><body><h1>音乐下载器API服务</h1><p>前端界面请访问: <a href="http://localhost:3000">http://localhost:3000</a></p></body></html>',
+        content_type='text/html'
+    )
 
 
 @app.route('/health', methods=['GET'])
