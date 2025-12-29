@@ -45,7 +45,7 @@ docker-compose logs -f
 ```
 
 #### 3. Access the application
-- Frontend interface: http://localhost:34303
+- Frontend interface: http://localhost:3000
 - Backend API: http://localhost:5000
 
 ### Manual Deployment
@@ -162,7 +162,7 @@ music-auto/
 - Automatic frontend build
 
 **Port Mapping**:
-- Frontend interface: 3000 → 34303 (host)
+- Frontend interface: 3000 → 3000 (host)
 - Backend API: 5000 (container internal)
 
 **Volume Mounts**:
