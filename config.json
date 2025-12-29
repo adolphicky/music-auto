@@ -8,7 +8,7 @@
     "cors_origins": "*",
     
     "download": {
-        "base_dir": "D:\\music",
+        "base_dir": "downloads",
         "max_concurrent": 3,
         "default_quality": "lossless",
         "include_lyric": true
