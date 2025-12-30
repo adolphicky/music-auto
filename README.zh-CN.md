@@ -302,7 +302,7 @@ music-auto/
 - `./downloads` → `/app/downloads`（下载目录）
 - `./config.json` → `/app/config.json`（配置文件）
 - `./cookie.txt` → `/app/cookie.txt`（Cookie文件）
-- `./logs` → `/var/log`（日志目录）
+- `./logs` → `/var/log/supervisor`（日志目录）
 ## 🔒 安全说明
 
 - 应用需要网易云账号登录才能下载VIP音质
