@@ -24,7 +24,7 @@ class WebSocketService {
         }
 
         // 创建Socket.IO连接，指定后端服务器地址
-        this.socket = io('http://localhost:5000', {
+        this.socket = io('http://127.0.0.1:5000', {
             path: '/socket.io'
         })
 
