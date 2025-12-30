@@ -7,6 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY vite.config.js ./
 COPY index.html ./
+COPY public/ ./public/
 COPY src/ ./src/
 
 # 安装前端依赖（包括开发依赖）并构建
