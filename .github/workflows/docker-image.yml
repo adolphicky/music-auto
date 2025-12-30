@@ -24,6 +24,30 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
+    # ====================== 新增步骤：获取并处理commit信息 ======================
+    - name: 获取并清洗Git Commit信息（用于Docker标签）
+      id: get_commit_msg
+      run: |
+        # 1. 获取原始commit信息（优先获取当前提交的完整信息，去除换行符）
+        RAW_COMMIT_MSG=$(git log -1 --pretty=format:"%s" | tr -d '\n' | tr -d '\r')
+        echo "原始commit信息：$RAW_COMMIT_MSG"
+
+        # 2. 清洗非法字符：
+        #    - 替换 空格/冒号/斜杠/中文 等为连字符 "-"
+        #    - 转为小写字母
+        #    - 去除首尾多余的连字符
+        #    - 截取前100个字符（避免过长）
+        CLEAN_COMMIT_MSG=$(echo "$RAW_COMMIT_MSG" | \
+          tr '[:upper:]' '[:lower:]' | \
+          sed -e 's/[^a-z0-9\.\-]/-/g' | \
+          sed -e 's/^-\+//' -e 's/-\+$//' | \
+          cut -c 1-100)
+        echo "清洗后commit信息：$CLEAN_COMMIT_MSG"
+
+        # 3. 将清洗后的commit信息存入环境变量（供后续步骤引用）
+        #    使用echo "::set-output::" 或 "echo "VAR=value" >> $GITHUB_ENV"
+        echo "CLEAN_COMMIT_MSG=$CLEAN_COMMIT_MSG" >> $GITHUB_ENV
+    # ==========================================================================
 
     - name: Build and push Docker image
       # 仅在真正 push 到 master（不是 PR）时才 push 镜像
