@@ -13,6 +13,9 @@ COPY src/ ./src/
 # 安装前端依赖（包括开发依赖）并构建
 RUN npm ci && npm run build
 
+# 确保public目录中的文件被复制到dist目录
+RUN cp -r public/* dist/ 2>/dev/null || true
+
 # 多阶段构建：Python构建阶段
 FROM python:3.13-slim AS python-builder
 
