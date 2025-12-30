@@ -50,8 +50,19 @@ jobs:
           echo "CLEAN_RELEASE_TAG=" >> $GITHUB_ENV
         fi
     # ==========================================================================
+    
+    # ====================== 新增：获取Git提交SHA（用于Push事件的标签） ======================
+    - name: 获取Git提交SHA
+      id: get_commit_sha
+      run: |
+        # 获取短SHA（前7位）
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        echo "短提交SHA: $SHORT_SHA"
+        echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+    # ==========================================================================
+
     - name: Build and push Docker image
-    # 只在push到master或release发布时运行
+      # 只在push到master或release发布时运行
       if: |
         (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
         (github.event_name == 'release' && github.event.action == 'published')
@@ -62,10 +73,8 @@ jobs:
         push: true
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:latest
-          # Push事件：添加commit标签
-          ${{ github.event_name == 'push' && ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:${{ github.sha }} || '' }}
-          # Release事件：添加release标签
-          ${{ github.event_name == 'release' && env.CLEAN_RELEASE_TAG != '' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, env.CLEAN_RELEASE_TAG) || '' }}
+          ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:${{ github.event_name == 'push' && env.SHORT_SHA || (github.event_name == 'release' && env.CLEAN_RELEASE_TAG) || '' }}
+    
     - name: Prune Docker (Local Cleanup)
       if: always()
       run: |
