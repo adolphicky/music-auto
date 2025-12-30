@@ -303,7 +303,7 @@ music-auto/
 - `./downloads` → `/app/downloads` (download directory)
 - `./config.json` → `/app/config.json` (configuration file)
 - `./cookie.txt` → `/app/cookie.txt` (Cookie file)
-- `./logs` → `/var/log` (log directory)
+- `./logs` → `/var/log/supervisor` (log directory)
 
 ## 🔒 Security Notes
 
