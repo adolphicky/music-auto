@@ -70,7 +70,9 @@ jobs:
 
     - name: Build and push Docker image
       # ====================== 修改：推送条件新增Release发布场景 ======================
-      if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'release' && github.event.action == 'published')
+      if: |
+        (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+        (github.event_name == 'release' && github.event.action == 'published')
       uses: docker/build-push-action@v4
       with:
         context: .
@@ -78,6 +80,5 @@ jobs:
         push: true
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:latest
-          ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:${{ env.CLEAN_COMMIT_MSG }}
-          # ====================== 新增：引用Release版本标签作为Docker标签（非空时生效） ======================
+          ${{ github.event_name != 'release' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, env.CLEAN_COMMIT_MSG) || '' }}
           ${{ env.CLEAN_RELEASE_TAG != '' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, env.CLEAN_RELEASE_TAG) || '' }}
