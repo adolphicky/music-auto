@@ -2,9 +2,10 @@ version: '3.8'
 
 services:
   music-downloader:
-    image: adolphicky/auto-music
+    build: .
     ports:
-      - "3000:3000"  # 前端界面
+      - "5000:5000"  # API和后端服务端口
+      - "3000:3000"  # 保留前端端口（向后兼容）
     volumes:
       - ./downloads:/app/downloads  # 挂载下载目录
       - ./config.json:/app/config.json  # 挂载配置文件(可选)

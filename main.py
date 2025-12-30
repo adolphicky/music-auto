@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 from urllib.parse import quote
-from flask import Flask, request, send_file, render_template, Response
+from flask import Flask, request, send_file, send_from_directory, render_template, Response
 from flask_socketio import SocketIO, emit
 
 try:
@@ -341,11 +341,23 @@ def handle_internal_error(e):
 
 @app.route('/')
 def index() -> Response:
-    """首页路由 - 重定向到前端服务器"""
-    return Response(
-        '<html><body><h1>音乐下载器API服务</h1><p>前端界面请访问: <a href="http://localhost:3000">http://localhost:3000</a></p></body></html>',
-        content_type='text/html'
-    )
+    """首页路由 - 服务前端静态文件"""
+    try:
+        return send_file('dist/index.html')
+    except Exception as e:
+        return Response(
+            '<html><body><h1>音乐下载器API服务</h1><p>前端文件未找到，请确保前端已构建</p></body></html>',
+            content_type='text/html'
+        )
+
+@app.route('/<path:path>')
+def serve_static(path):
+    """服务前端静态文件"""
+    try:
+        return send_from_directory('dist', path)
+    except:
+        # 对于SPA应用，所有未匹配的路由都返回index.html
+        return send_file('dist/index.html')
 
 
 @app.route('/health', methods=['GET'])

@@ -23,8 +23,8 @@ class WebSocketService {
             return
         }
 
-        // 创建Socket.IO连接，指定后端服务器地址
-        this.socket = io('http://127.0.0.1:5000', {
+        // 创建Socket.IO连接，使用相对路径（与前端同域）
+        this.socket = io({
             path: '/socket.io'
         })
 
