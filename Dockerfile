@@ -41,6 +41,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
+# 为系统日志目录设置权限（在创建用户之前）
+RUN mkdir -p /var/log/supervisor /var/run && chmod 777 /var/log/supervisor /var/run
+
 # 创建非root用户
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
@@ -58,9 +61,8 @@ COPY supervisord.conf /etc/supervisor/supervisord.conf
 # 创建下载目录和日志目录并设置权限
 RUN mkdir -p downloads logs && chown appuser:appuser downloads logs
 
-# 为系统日志目录设置权限（让非root用户可以写入）
-RUN mkdir -p /var/log/supervisor && chown appuser:appuser /var/log/supervisor
-RUN mkdir -p /var/run && chown appuser:appuser /var/run
+# 设置文件权限
+RUN chown -R appuser:appuser /app
 
 # 设置环境变量
 ENV PATH="/opt/venv/bin:$PATH"
