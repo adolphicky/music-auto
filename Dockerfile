@@ -69,11 +69,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV NODE_ENV=production
 
-# 设置文件权限
-RUN chown -R appuser:appuser /app
-
-# 切换到非root用户
-USER appuser
+# 注意：supervisor以root用户运行，但后端进程以appuser用户运行
+# 这样既能解决权限问题，又能保持后端进程的安全性
 
 # 暴露端口
 EXPOSE 3000 5000
