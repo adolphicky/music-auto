@@ -55,8 +55,8 @@ COPY config.json config.json
 # 复制supervisor配置
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# 创建下载目录并设置权限
-RUN mkdir -p downloads && chown appuser:appuser downloads
+# 创建下载目录和日志目录并设置权限
+RUN mkdir -p downloads logs && chown appuser:appuser downloads logs
 
 # 设置环境变量
 ENV PATH="/opt/venv/bin:$PATH"
