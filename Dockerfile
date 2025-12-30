@@ -9,8 +9,8 @@ COPY vite.config.js ./
 COPY index.html ./
 COPY src/ ./src/
 
-# 安装前端依赖并构建
-RUN npm ci --only=production && npm run build
+# 安装前端依赖（包括开发依赖）并构建
+RUN npm ci && npm run build
 
 # 多阶段构建：Python构建阶段
 FROM python:3.13-slim AS python-builder
