@@ -31,21 +31,21 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     # 保留你已有的：获取并清洗Git Commit信息
-    - name: 获取并清洗Git Commit信息（用于Docker标签）
-      id: get_commit_msg
-      run: |
-        RAW_COMMIT_MSG=$(git log -1 --pretty=format:"%s" | tr -d '\n' | tr -d '\r')
-        echo "原始commit信息：$RAW_COMMIT_MSG"
-        # 清洗非法字符
-        CLEAN_COMMIT_MSG=$(echo "$RAW_COMMIT_MSG" | \
-          tr '[:upper:]' '[:lower:]' | \
-          sed -e 's/[^a-z0-9\.\-]/-/g' | \
-          sed -e 's/^-\+//' -e 's/-\+$//' | \
-          cut -c 1-100)
-        # 兜底：若清洗后为空，使用default-tag
-        CLEAN_COMMIT_MSG=${CLEAN_COMMIT_MSG:-default-tag}
-        echo "清洗后commit信息：$CLEAN_COMMIT_MSG"
-        echo "CLEAN_COMMIT_MSG=$CLEAN_COMMIT_MSG" >> $GITHUB_ENV
+    #===- name: 获取并清洗Git Commit信息（用于Docker标签）
+    #  id: get_commit_msg
+    #  run: |
+    #    RAW_COMMIT_MSG=$(git log -1 --pretty=format:"%s" | tr -d '\n' | tr -d '\r')
+    #    echo "原始commit信息：$RAW_COMMIT_MSG"
+    #   # 清洗非法字符
+    #    CLEAN_COMMIT_MSG=$(echo "$RAW_COMMIT_MSG" | \
+    #      tr '[:upper:]' '[:lower:]' | \
+    #      sed -e 's/[^a-z0-9\.\-]/-/g' | \
+    #      sed -e 's/^-\+//' -e 's/-\+$//' | \
+    #      cut -c 1-100)
+    #    # 兜底：若清洗后为空，使用default-tag
+    #    CLEAN_COMMIT_MSG=${CLEAN_COMMIT_MSG:-default-tag}
+    #    echo "清洗后commit信息：$CLEAN_COMMIT_MSG"
+    #    echo "CLEAN_COMMIT_MSG=$CLEAN_COMMIT_MSG" >> $GITHUB_ENV
 
     # ====================== 新增：获取GitHub Release版本标签 ======================
     - name: 获取GitHub Release标签（用于Docker标签）
@@ -80,5 +80,5 @@ jobs:
         push: true
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:latest
-          ${{ github.event_name != 'release' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, env.CLEAN_COMMIT_MSG) || '' }}
           ${{ env.CLEAN_RELEASE_TAG != '' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, env.CLEAN_RELEASE_TAG) || '' }}
+    #=======构建commit信息的标签${{ github.event_name != 'release' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, env.CLEAN_COMMIT_MSG) || '' }}
