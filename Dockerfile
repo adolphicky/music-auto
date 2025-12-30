@@ -52,11 +52,15 @@ COPY --from=frontend-builder /app/dist ./dist
 COPY *.py ./
 COPY config.json config.json
 
-# 复制supervisor配置
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# 复制supervisor配置到正确目录
+COPY supervisord.conf /etc/supervisor/supervisord.conf
 
 # 创建下载目录和日志目录并设置权限
 RUN mkdir -p downloads logs && chown appuser:appuser downloads logs
+
+# 为系统日志目录设置权限（让非root用户可以写入）
+RUN mkdir -p /var/log/supervisor && chown appuser:appuser /var/log/supervisor
+RUN mkdir -p /var/run && chown appuser:appuser /var/run
 
 # 设置环境变量
 ENV PATH="/opt/venv/bin:$PATH"
@@ -77,4 +81,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
 # 启动supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
