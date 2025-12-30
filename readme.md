@@ -1,333 +1,289 @@
 # NetEase Cloud Music Downloader
 
-> [English](README.md) | [简体中文](README.zh-CN.md)
+> [English](README.md) | [Simplified Chinese](README.zh-CN.md)
 
-A NetEase Cloud Music download tool based on Python and Vue.js, supporting search, batch downloads, and providing a user-friendly web interface.
+A NetEase Cloud Music downloader based on Python and Vue.js, supporting searching and batch downloading of music, and providing a user-friendly web interface.
 
-## 🎯 Page Features
+## 🎯 Page Functions
 
 ### 1. Music Search (`/search`)
-- **Function Description**: Search and download individual songs
+
+- **Function Description**: Search for and download individual songs
+
 - **Key Features**:
-  - Support keyword-based music search
-  - Multiple audio quality options (Standard, High Quality, Lossless, Hi-Res, etc.)
-  - Real-time search results display
-  - Individual and batch download options
-  - Real-time download progress display
+
+- Supports keyword search for music
+
+- Multiple audio quality options (Standard, Ultra High, Lossless, Hi-Res, etc.)
+
+- Real-time search results display
+
+- Single song download and batch download
+
+- Real-time download progress display
 
 ### 2. Playlist Search (`/playlist-download`)
-- **Function Description**: Search and batch download playlist content
+
+- **Function Description**: Search for and batch download playlist content
+
 - **Key Features**:
-  - Support playlist ID or keyword search
-  - Playlist detail preview (including song list)
-  - Batch download all songs in playlist
-  - Configurable download quality and concurrency
-  - Download progress tracking
+
+- Supports playlist ID or keyword search
+
+- Playlist details preview (including song list)
+
+- Batch download of all songs in a playlist
+
+- Configurable download audio quality and concurrency
+
+- Download progress tracking
 
 ### 3. Artist Search (`/artist-download`)
-- **Function Description**: Search and download all works by an artist
+
+- **Function Description**: Search for and download all works by an artist
+
 - **Key Features**:
-  - Support artist name search
-  - Get all songs by the artist
-  - Multiple matching modes (exact match, partial match, etc.)
-  - Configurable download quantity limit
-  - Batch download artist works
+
+- Supports artist name search
+
+- Get an artist's complete song list
+
+- Multiple matching modes (exact match, partial match, etc.)
+
+- Set download quantity limits
+
+- Batch download artist's works
 
 ### 4. Hot Playlists (`/hot-playlists`)
-- **Function Description**: Browse and download NetEase Cloud Music's popular playlists
-- **Key Features**:
-  - Recommended playlists display
-  - High-quality playlist filtering
-  - Category-based playlist browsing
-  - Sort by play count
-  - One-click download of hot playlists
 
-### 5. Task Manager (`/task-manager`)
+- **Function Description**: Browse and download NetEase Cloud Music's hot playlists
+
+- **Main Features**:
+
+- Recommended playlist display
+
+- High-quality playlist filtering
+
+- Categorized playlist browsing
+
+- Sort by play count
+
+- One-click download of hot playlists
+
+### 5. Task Management (`/task-manager`)
+
 - **Function Description**: Manage all download tasks
-- **Key Features**:
-  - Real-time task status monitoring
-  - Download progress visualization
-  - Task cancellation functionality
-  - Historical task records
-  - Error information viewing
 
-### Global Features
-- **QR Code Login**: Support NetEase account login for VIP audio quality
-- **Responsive Design**: Compatible with desktop and mobile devices
-- **Real-time Notifications**: Download completion and error alerts
+- **Main Features**:
 
-## 🚀 Deployment & Usage
+- Real-time task status monitoring
 
-### Docker Deployment (Recommended)
+- Download progress visualization
 
-#### Environment Requirements
-- Docker
-- Docker Compose
+- Task cancellation function
 
-#### Deployment Steps
+- Historical task records
 
-1. **Prepare directories and files**
-```bash
-# Create necessary directories
-mkdir -p downloads
-mkdir -p logs
+- Error message viewing
 
-# Copy configuration file (optional)
-cp config.json.example config.json
-```
+### Global Functions
 
-2. **Start services**
-```bash
-# Start using docker-compose
-docker-compose up -d
+- **QR code login**: Supports NetEase Cloud Music account QR code login and cookie update
 
-# Check service status
-docker-compose logs -f
-```
+- **Responsive design**: Adapts to desktop and mobile devices
 
-3. **Access the application**
-- Frontend interface: http://localhost:3000
-- Backend API: http://localhost:5000
+- **Real-time notifications**: Download complete and error message
 
-#### Docker Image Information
-- **Image Name**: `adolphicky/auto-music`
-- **Base Image**: Python 3.13-slim + Node.js 18
-- **Process Management**: Supervisor
-- **Health Check**: Automatic service status monitoring
-
-### Manual Deployment
-
-#### Backend Deployment
-
-1. **Install Python dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-2. **Configure environment**
-```bash
-cp config.json.example config.json
-# Edit config.json file to configure parameters
-```
-
-3. **Start backend service**
-```bash
-python main.py
-```
-
-#### Frontend Deployment
-
-1. **Install dependencies**
-```bash
-npm install
-```
-
-2. **Development mode**
-```bash
-npm run dev
-```
-
-3. **Production build**
-```bash
-npm run build
-```
-
-## ⚙️ Configuration & Development
-
-### Configuration File Description
+### Configuration file description
 
 Configuration file: `config.json`
 
 ```json
+
 {
-    // Server configuration
-    "host": "0.0.0.0",
-    "port": 5000,
-    "debug": false,
-    "max_file_size": 524288000,
-    "request_timeout": 30,
-    "log_level": "INFO",
-    "cors_origins": "*",
-    
-    // General download configuration
-    "download": {
-        "base_dir": "downloads",
-        "max_concurrent": 3,
-        "default_quality": "lossless",
-        "include_lyric": true
-    },
-    
-    // Music download configuration
-    "music_download": {
-        "sub_dir": "",
-        "max_concurrent": 3
-    },
-    
-    // Playlist download configuration
-    "playlist_download": {
-        "sub_dir": "",
-        "max_concurrent": 3,
-        "default_quality": "lossless",
-        "include_lyric": true
-    },
-    
-    // Artist download configuration
-    "artist_download": {
-        "sub_dir": "",
-        "max_concurrent": 3,
-        "default_quality": "lossless",
-        "default_limit": 50,
-        "default_match_mode": "exact_single",
-        "include_lyric": true,
-        "search_page_size": 100
-    },
-    
-    // Database configuration
-    "database": {
-        "db_path": "downloads.db",
-        "recent_downloads_limit": 50
-    },
-    
-    // Cookie configuration
-    "cookie": {
-        "cookie_file": "cookie.txt",
-        "qr_login_max_attempts": 60
-    }
+// ============================================
+
+/ // Example of NetEase Cloud Music Toolbox configuration file
+
+/ // ===========================================
+
+/ // Copy this file to config.json and modify the configuration as needed
+
+/ // =============================================
+
+/ // Server configuration
+
+"host": "0.0.0.0", // Server listening address, 0.0.0.0 indicates listening on all network interfaces
+
+"port": 5000, // Server port number
+
+"debug": false, // Debug mode, recommended to set to false in production environment
+
+"max_file_size": 524288000, // Maximum file size limit (bytes), default 500MB
+
+"request_timeout": 30, // Request timeout (seconds)
+
+"log_level": "INFO", // Log level: DEBUG, INFO, WARNING, ERROR
+
+"cors_origins": "*", // CORS allowed origins, * indicates all domains are allowed
+
+/ // General download configuration
+
+"download": {
+
+"base_dir": "downloads", // Base download directory
+
+"max_concurrent": 3, // Maximum concurrent downloads
+
+"default_quality": "lossless", // Default audio quality: standard, exhigh, lossless, hires, sky, jyeffect, jymaster
+
+"include_lyric": true // Whether to include lyrics files
+
+},
+
+/ // Single track download configuration
+
+"music_download": {
+
+"sub_dir": "", // // Single song download subdirectory; if empty, the base directory will be used.
+
+"max_concurrent": 3 // Maximum concurrent downloads for a single song
+
+},
+
+/ // Playlist download configuration
+
+"playlist_download": {
+
+"sub_dir": "", // Playlist download subdirectory; if empty, the base directory will be used.
+
+"max_concurrent": 3, // Maximum concurrent downloads for a playlist.
+
+"default_quality": "lossless", // Default audio quality for playlist downloads.
+
+"include_lyric": true // Whether to include lyrics in playlist downloads.
+
+},
+
+/ // Artist download configuration
+
+"artist_download": {
+
+"sub_dir": "", // Artist download subdirectory; if empty, the base directory will be used.
+
+"max_concurrent": 3, // Maximum concurrent downloads for an artist.
+
+"default_quality": "lossless", // Default audio quality for artist downloads.
+
+"default_limit": 50, // Default limit on the number of songs downloaded.
+
+"default_match_mode": "exact_single", // Default matching modes: exact_single, exact_multi, partial, all
+
+"include_lyric": true, // Whether the artist download includes lyrics
+
+"search_page_size": 100, // Search page size
+
+"log_file_pattern": "artist_download_{timestamp}.log" // Log file naming pattern
+
+},
+
+// Database configuration
+
+"database": {
+
+"db_path": "downloads.db", // SQLite database file path
+
+"recent_downloads_limit": 50 // Limit on the number of recent download records displayed
+
+},
+
+// Cookie configuration
+
+"cookie": {
+
+"cookie_file": "cookie.txt", // Cookie storage file path
+
+"qr_login_max_attempts": 60 // Maximum number of QR code login attempts
+
+  },
+
 }
 ```
 
 ### Audio Quality Options
-- `standard` - Standard Quality
-- `exhigh` - High Quality  
-- `lossless` - Lossless Quality
-- `hires` - Hi-Res Quality
-- `sky` - Immersive Surround Sound
+
+- `standard` - Standard audio quality
+
+- `exhigh` - Extremely high audio quality
+
+- `lossless` - Lossless Audio Quality
+
+- `hires` - Hi-Res audio quality
+
+- `sky` - Immersive surround sound
+
 - `dolby` - Dolby Atmos
-
-### Development Environment Setup
-
-#### Backend Development
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Development mode
-python main.py
-
-# Debug mode (enable detailed logs)
-python main.py --debug
-```
-
-#### Frontend Development
-```bash
-# Install dependencies
-npm install
-
-# Development mode
-npm run dev
-
-# Production build
-npm run build
-
-# Preview build results
-npm run preview
-```
-
-### Project Structure
-```
-music-auto/
-├── src/                    # Frontend source code
-│   ├── components/         # Vue components
-│   │   ├── SearchComponent.vue          # Music search
-│   │   ├── PlaylistSearchComponent.vue  # Playlist search
-│   │   ├── ArtistDownloadComponent.vue  # Artist download
-│   │   ├── HotPlaylistsComponent.vue    # Hot playlists
-│   │   ├── TaskManagerComponent.vue     # Task management
-│   │   └── QRLoginComponent.vue         # QR code login
-│   ├── services/
-│   │   └── apiService.js   # API service
-│   ├── router/
-│   │   └── index.js        # Router configuration
-│   ├── App.vue            # Main application
-│   └── main.js            # Entry file
-├── *.py                   # Backend Python files
-├── config.json.example    # Configuration example
-├── docker-compose.yml     # Docker orchestration
-├── Dockerfile            # Docker image build
-├── requirements.txt      # Python dependencies
-└── package.json         # Frontend dependencies
-```
-
-### API Documentation
-
-#### Authentication
-- `GET /api/auth/qr-code` - Get login QR code
-- `GET /api/auth/check-login` - Check login status
-- `POST /api/auth/save-cookie` - Save Cookie
-
-#### Music
-- `GET /api/music/search` - Search music
-- `POST /api/music/download` - Download music
-- `GET /api/playlist/detail` - Get playlist details
-- `POST /api/playlist/download` - Download playlist
-- `GET /api/artist/songs` - Get artist songs
-- `POST /api/artist/download` - Download artist works
-- `GET /api/hot/playlists` - Get hot playlists
-
-#### Task Management
-- `GET /api/tasks` - Get all tasks
-- `GET /api/tasks/<task_id>` - Get task details
-- `POST /api/tasks/<task_id>/cancel` - Cancel task
-- `POST /api/tasks/clear-cancelled` - Clear cancelled tasks
-
-#### System
-- `GET /health` - Health check
-- `GET /api/info` - API information
 
 ## 🐳 Docker Image Information
 
 **Image Name**: `adolphicky/auto-music`
 
 **Image Features**:
+
 - Based on Python 3.13-slim
-- Includes Node.js 18 environment
-- Uses Supervisor for process management
+
+- Includes Node.js 20-alpine environment
+
+- Process management using Supervisor
+
 - Health check support
+
 - Automatic frontend build
 
 **Port Mapping**:
-- Frontend interface: 3000 → 3000 (host)
-- Backend API: 5000 (container internal)
 
-**Volume Mounts**:
+- Unified entry point: 5000 (inside the container)
+
+**Data Volume Mounting**:
+
 - `./downloads` → `/app/downloads` (download directory)
+
 - `./config.json` → `/app/config.json` (configuration file)
-- `./cookie.txt` → `/app/cookie.txt` (Cookie file)
+
+- `./cookie.txt` → `/app/cookie.txt` (cookie file)
+
 - `./logs` → `/var/log/supervisor` (log directory)
+## 🔒 Security Notice
 
-## 🔒 Security Notes
+- This application requires a NetEase Cloud Music account to download VIP audio quality.
 
-- Application requires NetEase account login for VIP audio quality
-- Cookie information is stored in local files, please keep it secure
-- Recommended to configure appropriate access control in production environments
-- Default listens on all network interfaces, can be modified as needed
+- Cookie information is stored in a local file; please keep it safe.
 
-## 📝 Usage Instructions
+- It is recommended to configure appropriate access control in a production environment.
 
-1. **First Use**: Access the frontend interface, click QR code login for account authentication
-2. **Search Music**: Enter keywords on the search page, select audio quality and download
-3. **Batch Download**: Use playlist or artist functions for batch downloads
-4. **Download Management**: Downloaded files are saved in the `downloads` directory
-5. **Task Monitoring**: Check download progress and status in the task management page
+- By default, it listens on all network interfaces; you can modify the binding address as needed.
+
+## 📝 Instructions for Use
+
+1. **First-time Use**: Access the front-end interface and scan the QR code to log in and authenticate your account.
+
+2. **Search Music**: Enter keywords on the search page, select the audio quality, and download.
+
+3. **Batch Download**: Use the playlist or artist function to download in batches.
+
+4. **Download Management**: Downloaded files are saved in the `downloads` directory.
+
+5. **Task Monitoring**: View download progress and status on the task management page.
 
 ## 📄 License
 
 This project is open source under the MIT License.
 
-## 🤝 Contributing
+## 🤝 Contributions
 
-Welcome to submit Issues and Pull Requests to improve this project.
+You are welcome to submit Issues and Pull Requests to improve this project.
 
 ## ⚠️ Disclaimer
 
-This project is for learning and research purposes only. Please do not use it for commercial purposes. Downloaded music files should comply with relevant copyright laws and regulations. Support genuine music.
+This project is for learning and research purposes only and should not be used for commercial purposes. Please comply with relevant copyright laws and regulations when downloading music files and support genuine music.
+

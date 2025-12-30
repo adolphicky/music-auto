@@ -56,143 +56,74 @@
 - **响应式设计**: 适配桌面和移动设备
 - **实时通知**: 下载完成和错误提示
 
-## 🚀 部署使用
-
-### Docker部署（推荐）
-
-#### 环境要求
-- Docker
-- Docker Compose
-
-#### 部署步骤
-
-1. **准备目录和文件**
-```bash
-# 创建必要目录
-mkdir -p downloads
-mkdir -p logs
-
-# 复制配置文件（可选）
-cp config.json.example config.json
-```
-
-2. **启动服务**
-```bash
-# 使用docker-compose启动
-docker-compose up -d
-
-# 查看服务状态
-docker-compose logs -f
-```
-
-3. **访问应用**
-- 前端界面：http://localhost:3000
-- 后端API：http://localhost:5000
-
-#### Docker镜像信息
-- **镜像名称**: `adolphicky/auto-music`
-- **基础镜像**: Python 3.13-slim + Node.js 18
-- **进程管理**: Supervisor
-- **健康检查**: 自动监控服务状态
-
-### 手动部署
-
-#### 后端部署
-
-1. **安装Python依赖**
-```bash
-pip install -r requirements.txt
-```
-
-2. **配置环境**
-```bash
-cp config.json.example config.json
-# 编辑config.json文件配置参数
-```
-
-3. **启动后端服务**
-```bash
-python main.py
-```
-
-#### 前端部署
-
-1. **安装依赖**
-```bash
-npm install
-```
-
-2. **开发模式运行**
-```bash
-npm run dev
-```
-
-3. **生产构建**
-```bash
-npm run build
-```
-
-## ⚙️ 配置开发
-
 ### 配置文件说明
 
 配置文件：`config.json`
 
 ```json
 {
+    // ===========================================
+    // 网易云音乐工具箱配置文件示例
+    // ===========================================
+    // 复制此文件为 config.json 并根据需要修改配置
+    // ===========================================
+
     // 服务器配置
-    "host": "0.0.0.0",
-    "port": 5000,
-    "debug": false,
-    "max_file_size": 524288000,
-    "request_timeout": 30,
-    "log_level": "INFO",
-    "cors_origins": "*",
+    "host": "0.0.0.0",                    // 服务器监听地址，0.0.0.0表示监听所有网络接口
+    "port": 5000,                         // 服务器端口号
+    "debug": false,                       // 调试模式，生产环境建议设为false
+    "max_file_size": 524288000,           // 最大文件大小限制（字节），默认500MB
+    "request_timeout": 30,                // 请求超时时间（秒）
+    "log_level": "INFO",                  // 日志级别：DEBUG, INFO, WARNING, ERROR
+    "cors_origins": "*",                  // CORS允许的源，*表示允许所有域名
     
     // 通用下载配置
     "download": {
-        "base_dir": "downloads",
-        "max_concurrent": 3,
-        "default_quality": "lossless",
-        "include_lyric": true
+        "base_dir": "downloads",          // 基础下载目录
+        "max_concurrent": 3,              // 最大并发下载数
+        "default_quality": "lossless",    // 默认音质：standard, exhigh, lossless, hires, sky, jyeffect, jymaster
+        "include_lyric": true             // 是否包含歌词文件
     },
     
     // 单曲下载配置
     "music_download": {
-        "sub_dir": "",
-        "max_concurrent": 3
+        "sub_dir": "",                    // 单曲下载子目录，为空则使用基础目录
+        "max_concurrent": 3               // 单曲下载最大并发数
     },
     
     // 歌单下载配置
     "playlist_download": {
-        "sub_dir": "",
-        "max_concurrent": 3,
-        "default_quality": "lossless",
-        "include_lyric": true
+        "sub_dir": "",                    // 歌单下载子目录，为空则使用基础目录
+        "max_concurrent": 3,              // 歌单下载最大并发数
+        "default_quality": "lossless",    // 歌单下载默认音质
+        "include_lyric": true             // 歌单下载是否包含歌词
     },
     
     // 歌手下载配置
     "artist_download": {
-        "sub_dir": "",
-        "max_concurrent": 3,
-        "default_quality": "lossless",
-        "default_limit": 50,
-        "default_match_mode": "exact_single",
-        "include_lyric": true,
-        "search_page_size": 100
+        "sub_dir": "",                    // 歌手下载子目录，为空则使用基础目录
+        "max_concurrent": 3,              // 歌手下载最大并发数
+        "default_quality": "lossless",    // 歌手下载默认音质
+        "default_limit": 50,              // 默认下载歌曲数量限制
+        "default_match_mode": "exact_single", // 默认匹配模式：exact_single, exact_multi, partial, all
+        "include_lyric": true,            // 歌手下载是否包含歌词
+        "search_page_size": 100,          // 搜索分页大小
+        "log_file_pattern": "artist_download_{timestamp}.log" // 日志文件命名模式
     },
     
     // 数据库配置
     "database": {
-        "db_path": "downloads.db",
-        "recent_downloads_limit": 50
+        "db_path": "downloads.db",        // SQLite数据库文件路径
+        "recent_downloads_limit": 50      // 最近下载记录显示数量限制
     },
     
     // Cookie配置
     "cookie": {
-        "cookie_file": "cookie.txt",
-        "qr_login_max_attempts": 60
-    }
+        "cookie_file": "cookie.txt",      // Cookie存储文件路径
+        "qr_login_max_attempts": 60       // 二维码登录最大尝试次数
+    },
+    
+
 }
 ```
 
@@ -204,99 +135,19 @@ npm run build
 - `sky` - 沉浸环绕声
 - `dolby` - 杜比全景声
 
-### 开发环境搭建
-
-#### 后端开发
-```bash
-# 安装依赖
-pip install -r requirements.txt
-
-# 开发模式运行
-python main.py
-
-# 调试模式（启用详细日志）
-python main.py --debug
-```
-
-#### 前端开发
-```bash
-# 安装依赖
-npm install
-
-# 开发模式
-npm run dev
-
-# 构建生产版本
-npm run build
-
-# 预览构建结果
-npm run preview
-```
-
-### 项目结构
-```
-music-auto/
-├── src/                    # 前端源码
-│   ├── components/         # Vue组件
-│   │   ├── SearchComponent.vue          # 音乐搜索
-│   │   ├── PlaylistSearchComponent.vue  # 歌单搜索
-│   │   ├── ArtistDownloadComponent.vue  # 歌手下载
-│   │   ├── HotPlaylistsComponent.vue    # 热门歌单
-│   │   ├── TaskManagerComponent.vue     # 任务管理
-│   │   └── QRLoginComponent.vue         # 二维码登录
-│   ├── services/
-│   │   └── apiService.js   # API服务
-│   ├── router/
-│   │   └── index.js        # 路由配置
-│   ├── App.vue            # 主应用
-│   └── main.js            # 入口文件
-├── *.py                   # 后端Python文件
-├── config.json.example    # 配置示例
-├── docker-compose.yml     # Docker编排
-├── Dockerfile            # Docker镜像构建
-├── requirements.txt      # Python依赖
-└── package.json         # 前端依赖
-```
-
-### API接口文档
-
-#### 认证相关
-- `GET /api/auth/qr-code` - 获取登录二维码
-- `GET /api/auth/check-login` - 检查登录状态
-- `POST /api/auth/save-cookie` - 保存Cookie
-
-#### 音乐相关
-- `GET /api/music/search` - 搜索音乐
-- `POST /api/music/download` - 下载音乐
-- `GET /api/playlist/detail` - 获取歌单详情
-- `POST /api/playlist/download` - 下载歌单
-- `GET /api/artist/songs` - 获取歌手歌曲
-- `POST /api/artist/download` - 下载歌手作品
-- `GET /api/hot/playlists` - 获取热门歌单
-
-#### 任务管理
-- `GET /api/tasks` - 获取所有任务
-- `GET /api/tasks/<task_id>` - 获取任务详情
-- `POST /api/tasks/<task_id>/cancel` - 取消任务
-- `POST /api/tasks/clear-cancelled` - 清理已取消任务
-
-#### 系统相关
-- `GET /health` - 健康检查
-- `GET /api/info` - API信息
 ## 🐳 Docker镜像信息
 
 **镜像名称**: `adolphicky/auto-music`
 
 **镜像特性**:
 - 基于Python 3.13-slim
-- 包含Node.js 18环境
+- 包含Node.js 20-alpine环境
 - 使用Supervisor管理进程
 - 健康检查支持
 - 自动构建前端
 
 **端口映射**:
-- 前端界面：3000 → 3000（主机）
-- 后端API：5000（容器内部）
+- 统一入口：5000（容器内部）
 
 **数据卷挂载**:
 - `./downloads` → `/app/downloads`（下载目录）
