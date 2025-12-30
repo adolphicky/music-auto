@@ -48,6 +48,26 @@ jobs:
         #    使用echo "::set-output::" 或 "echo "VAR=value" >> $GITHUB_ENV"
         echo "CLEAN_COMMIT_MSG=$CLEAN_COMMIT_MSG" >> $GITHUB_ENV
     # ==========================================================================
+    # ====================== 新增：获取GitHub Release版本标签 ======================
+    - name: 获取GitHub Release标签（用于Docker标签）
+      id: get_release_tag
+      run: |
+        # 判断是否为Release事件，若是则提取标签名
+        if [ "${{ github.event_name }}" = "release" ]; then
+          # 获取Release标签名（如v1.0.0），并简单清洗
+          RELEASE_TAG=${{ github.event.release.tag_name }}
+          # 清洗Release标签（避免特殊字符，可选，因手动创建的标签通常合规）
+          CLEAN_RELEASE_TAG=$(echo "$RELEASE_TAG" | \
+            sed -e 's/[^a-z0-9\.\-]/-/g' | \
+            sed -e 's/^-\+//' -e 's/-\+$//')
+          echo "Release标签（清洗后）：$CLEAN_RELEASE_TAG"
+          echo "CLEAN_RELEASE_TAG=$CLEAN_RELEASE_TAG" >> $GITHUB_ENV
+        else
+          # 非Release事件，设置为空字符串
+          echo "非Release事件，不设置Release标签"
+          echo "CLEAN_RELEASE_TAG=" >> $GITHUB_ENV
+        fi
+    # ==========================================================================
 
     - name: Build and push Docker image
       # 仅在真正 push 到 master（不是 PR）时才 push 镜像
@@ -59,4 +79,6 @@ jobs:
         push: true
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:latest
-          ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:${{ github.sha }}
+          ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:${{ env.CLEAN_COMMIT_MSG }}
+          # ====================== 新增：引用Release版本标签作为Docker标签（非空时生效） ======================
+          ${{ env.CLEAN_RELEASE_TAG != '' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, env.CLEAN_RELEASE_TAG) || '' }}
