@@ -1,10 +1,15 @@
 name: Docker Image CI
 
 on:
+  # 保留原有触发条件
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  # ====================== 新增：GitHub Release发布时触发 ======================
+  release:
+    types: [ published ]  # 仅当Release正式发布（published）时触发，忽略draft（草稿）、edited（编辑）等
+# ==========================================================================
 
 jobs:
   build:
@@ -24,30 +29,24 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    # ====================== 新增步骤：获取并处理commit信息 ======================
+
+    # 保留你已有的：获取并清洗Git Commit信息
     - name: 获取并清洗Git Commit信息（用于Docker标签）
       id: get_commit_msg
       run: |
-        # 1. 获取原始commit信息（优先获取当前提交的完整信息，去除换行符）
         RAW_COMMIT_MSG=$(git log -1 --pretty=format:"%s" | tr -d '\n' | tr -d '\r')
         echo "原始commit信息：$RAW_COMMIT_MSG"
-
-        # 2. 清洗非法字符：
-        #    - 替换 空格/冒号/斜杠/中文 等为连字符 "-"
-        #    - 转为小写字母
-        #    - 去除首尾多余的连字符
-        #    - 截取前100个字符（避免过长）
+        # 清洗非法字符
         CLEAN_COMMIT_MSG=$(echo "$RAW_COMMIT_MSG" | \
           tr '[:upper:]' '[:lower:]' | \
           sed -e 's/[^a-z0-9\.\-]/-/g' | \
           sed -e 's/^-\+//' -e 's/-\+$//' | \
           cut -c 1-100)
+        # 兜底：若清洗后为空，使用default-tag
+        CLEAN_COMMIT_MSG=${CLEAN_COMMIT_MSG:-default-tag}
         echo "清洗后commit信息：$CLEAN_COMMIT_MSG"
-
-        # 3. 将清洗后的commit信息存入环境变量（供后续步骤引用）
-        #    使用echo "::set-output::" 或 "echo "VAR=value" >> $GITHUB_ENV"
         echo "CLEAN_COMMIT_MSG=$CLEAN_COMMIT_MSG" >> $GITHUB_ENV
-    # ==========================================================================
+
     # ====================== 新增：获取GitHub Release版本标签 ======================
     - name: 获取GitHub Release标签（用于Docker标签）
       id: get_release_tag
@@ -70,8 +69,8 @@ jobs:
     # ==========================================================================
 
     - name: Build and push Docker image
-      # 仅在真正 push 到 master（不是 PR）时才 push 镜像
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      # ====================== 修改：推送条件新增Release发布场景 ======================
+      if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'release' && github.event.action == 'published')
       uses: docker/build-push-action@v4
       with:
         context: .
