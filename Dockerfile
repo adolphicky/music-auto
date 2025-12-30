@@ -41,12 +41,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# 为系统日志目录设置权限（在创建用户之前）
-RUN mkdir -p /var/log/supervisor /var/run && chmod 777 /var/log/supervisor /var/run
-
-# 创建非root用户
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
 WORKDIR /app
 
 # 从构建阶段复制文件
@@ -58,19 +52,13 @@ COPY config.json config.json
 # 复制supervisor配置到正确目录
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 
-# 创建下载目录和日志目录并设置权限
-RUN mkdir -p downloads logs && chown appuser:appuser downloads logs
-
-# 设置文件权限
-RUN chown -R appuser:appuser /app
+# 创建下载目录和日志目录
+RUN mkdir -p downloads logs
 
 # 设置环境变量
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV NODE_ENV=production
-
-# 注意：supervisor以root用户运行，但后端进程以appuser用户运行
-# 这样既能解决权限问题，又能保持后端进程的安全性
 
 # 暴露端口
 EXPOSE 3000 5000
@@ -79,5 +67,5 @@ EXPOSE 3000 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
-# 启动supervisor
+# 启动supervisor（以root用户运行）
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
