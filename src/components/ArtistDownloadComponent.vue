@@ -434,15 +434,14 @@ export default {
         return
       }
       
-      const confirmDownload = confirm(`确定要下载歌手 "${artistName.value}" 的所有 ${totalSongs.value} 首歌曲吗？\n\n这将使用批量下载功能，可能需要较长时间。`)
-      
-      if (!confirmDownload) {
-        return
-      }
+      // 默认确认，直接执行下载
+      downloadResults.value.push({
+        success: true,
+        message: `开始下载歌手 "${artistName.value}" 的所有 ${totalSongs.value} 首歌曲...`
+      })
 
       isDownloading.value = true
       errorMessage.value = ''
-      downloadResults.value = []
       downloadMessage.value = '批量下载歌手歌曲中...'
 
       try {
@@ -453,23 +452,33 @@ export default {
           totalSongs.value,  // 下载所有歌曲
           'exact_single',    // 精确匹配单个歌手
           true,              // 包含歌词
-          3                  // 最大并发数
+          3,                 // 最大并发数
+          true               // 异步模式
         )
         
-        if (response.success) {
-          // 批量下载API返回的结果处理
-          if (response.data && Array.isArray(response.data)) {
-            response.data.forEach(result => {
-              downloadResults.value.push({
-                success: result.success || true,
-                message: result.message || '下载完成'
-              })
-            })
-          } else {
+        if (response.status === 200) {
+          if (response.data.async) {
+            // 异步下载模式，返回任务ID
+            const taskId = response.data.task_id
             downloadResults.value.push({
               success: true,
-              message: `批量下载完成！总计: ${totalSongs.value}首歌曲`
+              message: `异步下载任务已提交！\n任务ID: ${taskId}\n请到任务管理页面查看进度`
             })
+          } else {
+            // 批量下载API返回的结果处理
+            if (response.data && Array.isArray(response.data)) {
+              response.data.forEach(result => {
+                downloadResults.value.push({
+                  success: result.success || true,
+                  message: result.message || '下载完成'
+                })
+              })
+            } else {
+              downloadResults.value.push({
+                success: true,
+                message: `批量下载完成！总计: ${totalSongs.value}首歌曲`
+              })
+            }
           }
         } else {
           downloadResults.value.push({
@@ -507,13 +516,22 @@ export default {
           downloadMessage.value = `${operationName}中... (${i + 1}/${songIds.length})`
           
           try {
-            const response = await apiService.downloadMusic(songId, selectedQuality.value, 'json')
+            const response = await apiService.downloadMusic(songId, selectedQuality.value, 'json', true)  // 异步模式
             
             if (response.status === 200) {
-              results.push({
-                success: true,
-                message: `下载成功: ${response.data.name} - ${response.data.artist}`
-              })
+              if (response.data.async) {
+                // 异步下载模式，返回任务ID
+                const taskId = response.data.task_id
+                results.push({
+                  success: true,
+                  message: `异步下载任务已提交！\n任务ID: ${taskId}\n请到任务管理页面查看进度`
+                })
+              } else {
+                results.push({
+                  success: true,
+                  message: `下载成功: ${response.data.name} - ${response.data.artist}`
+                })
+              }
               successCount++
             } else {
               failedSongs.push({
@@ -535,7 +553,7 @@ export default {
         if (successCount > 0) {
           results.push({
             success: true,
-            message: `成功下载 ${successCount} 首歌曲`
+            message: `成功提交 ${successCount} 个下载任务`
           })
         }
 
@@ -561,7 +579,7 @@ export default {
         // 添加总结信息
         results.push({
           success: true,
-          message: `${operationName}完成！成功: ${successCount}首，失败: ${failCount}首`
+          message: `${operationName}完成！成功提交: ${successCount}个任务，失败: ${failCount}首`
         })
 
         downloadResults.value = results
@@ -577,7 +595,10 @@ export default {
     // 解析歌曲信息
     const parseSong = (songId) => {
       // 这里可以切换到解析标签页或显示歌曲详情
-      alert(`准备解析歌曲ID: ${songId}`)
+      downloadResults.value.push({
+        success: true,
+        message: `准备解析歌曲ID: ${songId}`
+      })
     }
 
     // 安全的序号计算函数

@@ -571,7 +571,7 @@ class NeteaseAPI:
             playlists = []
             offset = 0
             page_size = 50  # 每页获取50个歌单
-            max_pages = 20  # 最大页数限制，避免无限循环
+            max_pages = 2  # 最大页数限制，避免无限循环
             
             for page in range(max_pages):
                 # 构建参数
@@ -597,8 +597,7 @@ class NeteaseAPI:
                 if not current_playlists:
                     break  # 没有更多数据
                 
-                # 调试信息：打印当前页获取的歌单数量
-                print(f"第{page+1}页获取到{len(current_playlists)}个歌单")
+
                 
                 for item in current_playlists:
                     playlist_info = {
@@ -626,7 +625,7 @@ class NeteaseAPI:
                 
                 offset += page_size
             
-            print(f"总共获取到{len(playlists)}个个性化推荐歌单")
+
             return playlists
         except requests.RequestException as e:
             raise APIException(f"获取推荐歌单请求失败: {e}")
@@ -717,11 +716,7 @@ class NeteaseAPI:
                     print(f"搜索API获取到{len(playlists)}个歌单，尝试使用歌单发现API获取更多数据")
                     try:
                         discover_playlists = self._get_playlists_by_discover(cookies, limit)
-                        existing_ids = {p['id'] for p in playlists}
-                        for playlist in discover_playlists:
-                            if playlist['id'] not in existing_ids:
-                                playlists.append(playlist)
-                                existing_ids.add(playlist['id'])
+                        playlists.extend(discover_playlists)
                         print(f"合并后总共获取到{len(playlists)}个歌单")
                     except Exception as e:
                         print(f"歌单发现API失败: {e}")
@@ -731,11 +726,7 @@ class NeteaseAPI:
                     print(f"当前获取到{len(playlists)}个歌单，尝试使用热门歌单API")
                     try:
                         hot_playlists = self._get_hot_playlists(cookies, limit)
-                        existing_ids = {p['id'] for p in playlists}
-                        for playlist in hot_playlists:
-                            if playlist['id'] not in existing_ids:
-                                playlists.append(playlist)
-                                existing_ids.add(playlist['id'])
+                        playlists.extend(hot_playlists)
                         print(f"最终合并后总共获取到{len(playlists)}个歌单")
                     except Exception as e:
                         print(f"热门歌单API失败: {e}")
@@ -764,8 +755,8 @@ class NeteaseAPI:
         
         # 使用搜索API按分类获取歌单
         offset = 0
-        page_size = 100
-        max_pages = 10
+        page_size = 50
+        max_pages = 20
         
         for page in range(max_pages):
             try:
@@ -799,28 +790,22 @@ class NeteaseAPI:
                 total = search_data.get('playlistCount', 0)
                 print(f"分类 '{category}' 第{page+1}页获取到{len(current_playlists)}个歌单，总数: {total}")
                 
-                # 去重添加歌单
-                existing_ids = {p['id'] for p in playlists}
-                new_playlists_count = 0
-                
+                # 添加歌单（网易云接口返回的歌单都是唯一的，不需要去重）
                 for item in current_playlists:
-                    if item['id'] not in existing_ids:
-                        playlist_info = {
-                            'id': item['id'],
-                            'name': item['name'],
-                            'coverImgUrl': item.get('coverImgUrl', ''),
-                            'playCount': item.get('playCount', 0),
-                            'trackCount': item.get('trackCount', 0),
+                    playlist_info = {
+                        'id': item['id'],
+                        'name': item['name'],
+                        'coverImgUrl': item.get('coverImgUrl', ''),
+                        'playCount': item.get('playCount', 0),
+                        'trackCount': item.get('trackCount', 0),
                             'creator': item.get('creator', {}).get('nickname', ''),
                             'description': item.get('description', ''),
                             'tags': item.get('tags', []),
                             'url': f'https://music.163.com/playlist?id={item["id"]}'
                         }
-                        playlists.append(playlist_info)
-                        existing_ids.add(item['id'])
-                        new_playlists_count += 1
+                    playlists.append(playlist_info)
                 
-                print(f"分类 '{category}' 第{page+1}页新增{new_playlists_count}个歌单，当前总数: {len(playlists)}")
+                print(f"分类 '{category}' 第{page+1}页新增{len(current_playlists)}个歌单，当前总数: {len(playlists)}")
                 
                 # 检查是否达到限制
                 if limit is not None and len(playlists) >= limit:
@@ -892,28 +877,22 @@ class NeteaseAPI:
                         if not current_playlists:
                             break
                         
-                        # 去重添加歌单
-                        existing_ids = {p['id'] for p in playlists}
-                        new_playlists_count = 0
-                        
+                        # 添加歌单（网易云接口返回的歌单都是唯一的，不需要去重）
                         for item in current_playlists:
-                            if item['id'] not in existing_ids:
-                                playlist_info = {
-                                    'id': item['id'],
-                                    'name': item['name'],
-                                    'coverImgUrl': item.get('coverImgUrl', ''),
-                                    'playCount': item.get('playCount', 0),
-                                    'trackCount': item.get('trackCount', 0),
-                                    'creator': item.get('creator', {}).get('nickname', ''),
-                                    'description': item.get('description', ''),
-                                    'tags': item.get('tags', []),
-                                    'url': f'https://music.163.com/playlist?id={item["id"]}'
-                                }
-                                playlists.append(playlist_info)
-                                existing_ids.add(item['id'])
-                                new_playlists_count += 1
+                            playlist_info = {
+                                'id': item['id'],
+                                'name': item['name'],
+                                'coverImgUrl': item.get('coverImgUrl', ''),
+                                'playCount': item.get('playCount', 0),
+                                'trackCount': item.get('trackCount', 0),
+                                'creator': item.get('creator', {}).get('nickname', ''),
+                                'description': item.get('description', ''),
+                                'tags': item.get('tags', []),
+                                'url': f'https://music.163.com/playlist?id={item["id"]}'
+                            }
+                            playlists.append(playlist_info)
                         
-                        print(f"分类 '{category}' 排序 '{order}' 第{page+1}页获取到{len(current_playlists)}个歌单，新增{new_playlists_count}个，当前总数: {len(playlists)}")
+                        print(f"分类 '{category}' 排序 '{order}' 第{page+1}页获取到{len(current_playlists)}个歌单，当前总数: {len(playlists)}")
                         
                         # 检查是否达到限制
                         if limit is not None and len(playlists) >= limit:
@@ -982,26 +961,20 @@ class NeteaseAPI:
                     if not current_playlists:
                         break
                     
-                    # 去重添加歌单
-                    existing_ids = {p['id'] for p in playlists}
-                    new_playlists_count = 0
-                    
+                    # 添加歌单（网易云接口返回的歌单都是唯一的，不需要去重）
                     for item in current_playlists:
-                        if item['id'] not in existing_ids:
-                            playlist_info = {
-                                'id': item['id'],
-                                'name': item['name'],
-                                'coverImgUrl': item.get('coverImgUrl', ''),
-                                'playCount': item.get('playCount', 0),
-                                'trackCount': item.get('trackCount', 0),
-                                'creator': item.get('creator', {}).get('nickname', ''),
-                                'description': item.get('description', ''),
-                                'tags': item.get('tags', []),
-                                'url': f'https://music.163.com/playlist?id={item["id"]}'
-                            }
-                            playlists.append(playlist_info)
-                            existing_ids.add(item['id'])
-                            new_playlists_count += 1
+                        playlist_info = {
+                            'id': item['id'],
+                            'name': item['name'],
+                            'coverImgUrl': item.get('coverImgUrl', ''),
+                            'playCount': item.get('playCount', 0),
+                            'trackCount': item.get('trackCount', 0),
+                            'creator': item.get('creator', {}).get('nickname', ''),
+                            'description': item.get('description', ''),
+                            'tags': item.get('tags', []),
+                            'url': f'https://music.163.com/playlist?id={item["id"]}'
+                        }
+                        playlists.append(playlist_info)
                     
                     # 检查是否达到限制
                     if limit is not None and len(playlists) >= limit:

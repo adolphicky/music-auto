@@ -159,10 +159,9 @@ export default {
 
       try {
         const response = await apiService.searchMusic(searchKeyword.value, 100, 0, '1000')
-        console.log('API响应:', response)
         
         if (response.status === 200) {
-          console.log('响应数据:', response.data)
+          // 后端已排序，直接使用返回的数据
           playlists.value = response.data || []
           hasSearched.value = true
         } else {
@@ -197,7 +196,7 @@ export default {
       downloadSuccess.value = false
 
       try {
-        const response = await apiService.downloadPlaylist(playlist.id, 'lossless', true, 3)
+        const response = await apiService.downloadPlaylist(playlist.id, 'lossless', true, 3, null, true)
         
         if (response.status === 200) {
           downloadSuccess.value = true

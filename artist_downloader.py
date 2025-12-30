@@ -45,7 +45,7 @@ class ArtistDownloadConfig:
             from main import config
             # 使用统一下载目录配置
             base_dir = config.download_config.get('base_dir', 'downloads')
-            artist_sub_dir = config.artist_download_config.get('sub_dir', 'artists')
+            artist_sub_dir = config.artist_download_config.get('sub_dir')
             
             # 设置默认值
             if self.quality is None:
@@ -288,8 +288,16 @@ class ArtistDownloader:
             self.logger.error(f"搜索歌手歌曲失败: {e}")
             return []
     
-    def download_song(self, song: Dict[str, Any]) -> SongDownloadResult:
-        """下载单首歌曲"""
+    def download_song(self, song: Dict[str, Any], task_id: str = None) -> SongDownloadResult:
+        """下载单首歌曲
+        
+        Args:
+            song: 歌曲信息
+            task_id: 任务ID（用于取消检查）
+            
+        Returns:
+            下载结果
+        """
         try:
             song_id = song['id']
             song_name = song['name']
@@ -298,8 +306,22 @@ class ArtistDownloader:
             
             self.logger.info(f"开始下载: {song_name} - {artists}")
             
+            # 检查任务是否已被取消
+            if task_id:
+                from task_manager import task_manager, TaskStatus
+                task_info = task_manager.get_task(task_id)
+                if task_info and task_info.status == TaskStatus.CANCELLED:
+                    self.logger.info(f"任务 {task_id} 已被取消，停止下载歌曲: {song_name}")
+                    return SongDownloadResult(
+                        song_id=song_id,
+                        name=song_name,
+                        artists=artists,
+                        status='cancelled',
+                        error_message='任务已被用户取消'
+                    )
+            
             # 下载歌曲文件
-            download_result = self.downloader.download_music_file(song_id, self.config.quality)
+            download_result = self.downloader.download_music_file(song_id, self.config.quality, task_id=task_id)
             
             if download_result.success:
                 # 获取歌词信息（从download_result中获取，避免重复API调用）

@@ -45,14 +45,17 @@ class PlaylistDownloadConfig:
             from main import config
             # 使用统一下载目录配置
             base_dir = config.download_config.get('base_dir', 'downloads')
-            playlist_sub_dir = config.playlist_download_config.get('sub_dir', 'playlists')
+            playlist_sub_dir = config.playlist_download_config.get('sub_dir')
             
             # 设置默认值
             if self.quality is None:
                 self.quality = config.playlist_download_config.get('default_quality', 'lossless')
             if self.download_dir is None:
-                # 组合基础目录和子目录
-                self.download_dir = str(Path(base_dir) / playlist_sub_dir)
+                # 如果sub_dir为空，直接使用base_dir；否则组合路径
+                if playlist_sub_dir:
+                    self.download_dir = str(Path(base_dir) / playlist_sub_dir)
+                else:
+                    self.download_dir = base_dir
             if self.max_concurrent is None:
                 self.max_concurrent = config.playlist_download_config.get('max_concurrent', 3)
             if self.include_lyric is True:
@@ -289,8 +292,13 @@ class PlaylistDownloader:
             self.logger.error(f"详细错误信息: {traceback.format_exc()}")
             return []
     
-    def download_song(self, song: Dict[str, Any]) -> SongDownloadResult:
-        """下载单首歌曲"""
+    def download_song(self, song: Dict[str, Any], task_id: str = None) -> SongDownloadResult:
+        """下载单首歌曲
+        
+        Args:
+            song: 歌曲信息
+            task_id: 任务ID（用于取消检查）
+        """
         try:
             song_id = song['id']
             song_name = song['name']
@@ -299,8 +307,23 @@ class PlaylistDownloader:
             
             self.logger.info(f"开始下载: {song_name} - {artists}")
             
+            # 检查任务是否已被取消
+            if task_id:
+                from task_manager import task_manager, TaskStatus
+                task_info = task_manager.get_task(task_id)
+                if task_info and task_info.status == TaskStatus.CANCELLED:
+                    self.logger.info(f"任务 {task_id} 已被取消，停止下载歌曲: {song_name}")
+                    return SongDownloadResult(
+                        song_id=song_id,
+                        name=song_name,
+                        artists=artists,
+                        album=album,
+                        status='cancelled',
+                        error_message='任务已被用户取消'
+                    )
+            
             # 下载歌曲文件
-            download_result = self.downloader.download_music_file(song_id, self.config.quality)
+            download_result = self.downloader.download_music_file(song_id, self.config.quality, task_id=task_id)
             
             if download_result.success:
                 # 获取歌词信息（从download_result中获取，避免重复API调用）
@@ -344,8 +367,15 @@ class PlaylistDownloader:
                 error_message=str(e)
             )
     
-    def download_playlist_songs(self) -> Dict[str, Any]:
-        """批量下载歌单中的歌曲"""
+    def download_playlist_songs(self, task_id: str = None) -> Dict[str, Any]:
+        """批量下载歌单中的歌曲
+        
+        Args:
+            task_id: 任务ID，用于进度更新
+        """
+        # 导入任务管理器
+        from task_manager import task_manager
+        
         # 获取歌单歌曲
         playlist_songs = self.get_playlist_songs()
         
@@ -367,6 +397,11 @@ class PlaylistDownloader:
         
         for i, song in enumerate(playlist_songs, 1):
             self.logger.info(f"进度: {i}/{total_count}")
+            
+            # 更新任务进度
+            if task_id:
+                progress = (i / total_count) * 100
+                task_manager.update_task_progress(task_id, progress, i, total_count)
             
             # 检查歌曲是否已下载（使用数据库检查）
             song_id = song['id']
@@ -405,7 +440,7 @@ class PlaylistDownloader:
                         continue
             
             # 歌曲未下载或下载失败，正常下载
-            result = self.download_song(song)
+            result = self.download_song(song, task_id=task_id)
             download_results.append(result)
             
             # 记录下载结果到数据库
@@ -486,8 +521,16 @@ class PlaylistDownloader:
         
         return result_data
 
-    def download_selected_songs(self, selected_song_ids: List[int]) -> Dict[str, Any]:
-        """下载选中的歌曲"""
+    def download_selected_songs(self, selected_song_ids: List[int], task_id: str = None) -> Dict[str, Any]:
+        """下载选中的歌曲
+        
+        Args:
+            selected_song_ids: 选中的歌曲ID列表
+            task_id: 任务ID，用于进度更新
+        """
+        # 导入任务管理器
+        from task_manager import task_manager
+        
         # 获取歌单中的所有歌曲
         playlist_songs = self.get_playlist_songs()
         
@@ -521,6 +564,11 @@ class PlaylistDownloader:
         
         for i, song in enumerate(selected_songs, 1):
             self.logger.info(f"进度: {i}/{total_count}")
+            
+            # 更新任务进度
+            if task_id:
+                progress = (i / total_count) * 100
+                task_manager.update_task_progress(task_id, progress, i, total_count)
             
             # 检查歌曲是否已下载（使用数据库检查）
             song_id = song['id']
@@ -559,7 +607,7 @@ class PlaylistDownloader:
                         continue
             
             # 歌曲未下载或下载失败，正常下载
-            result = self.download_song(song)
+            result = self.download_song(song, task_id=task_id)
             download_results.append(result)
             
             # 记录下载结果到数据库

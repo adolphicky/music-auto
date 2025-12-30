@@ -1,224 +1,333 @@
-# 网易云音乐自动下载器
+# NetEase Cloud Music Downloader
 
-**语言**: 中文 | [English](README_EN.md)
+> [English](README.md) | [简体中文](README.zh-CN.md)
 
-一个基于Flask + Vue.js的全栈网易云音乐下载工具，支持多种音质下载、批量下载、二维码登录等功能。
+A NetEase Cloud Music download tool based on Python and Vue.js, supporting search, batch downloads, and providing a user-friendly web interface.
 
-## 🎯 功能特性
+## 🎯 Page Features
 
-### 前端Web界面功能
-- **音乐搜索** - 搜索单曲并下载，支持多种音质选择
-- **歌单搜索** - 搜索并批量下载歌单内容
-- **歌手搜索** - 搜索并下载歌手的所有作品
-- **热门歌单** - 浏览和下载网易云热门歌单
-- **二维码登录** - 支持网易云账号登录获取VIP音质
-- **响应式设计** - 适配桌面和移动设备
+### 1. Music Search (`/search`)
+- **Function Description**: Search and download individual songs
+- **Key Features**:
+  - Support keyword-based music search
+  - Multiple audio quality options (Standard, High Quality, Lossless, Hi-Res, etc.)
+  - Real-time search results display
+  - Individual and batch download options
+  - Real-time download progress display
 
-### 下载特性
-- **多种音质支持**：标准音质、极高音质、无损音质、Hi-Res音质、杜比全景声等
-- **批量下载**：支持歌单和歌手作品的批量下载
-- **并发控制**：可配置最大并发下载数
-- **歌词下载**：可选是否下载歌词文件
-- **下载历史**：记录下载历史，便于管理
+### 2. Playlist Search (`/playlist-download`)
+- **Function Description**: Search and batch download playlist content
+- **Key Features**:
+  - Support playlist ID or keyword search
+  - Playlist detail preview (including song list)
+  - Batch download all songs in playlist
+  - Configurable download quality and concurrency
+  - Download progress tracking
 
-## 🚀 快速开始
+### 3. Artist Search (`/artist-download`)
+- **Function Description**: Search and download all works by an artist
+- **Key Features**:
+  - Support artist name search
+  - Get all songs by the artist
+  - Multiple matching modes (exact match, partial match, etc.)
+  - Configurable download quantity limit
+  - Batch download artist works
 
-### Docker部署（推荐）
+### 4. Hot Playlists (`/hot-playlists`)
+- **Function Description**: Browse and download NetEase Cloud Music's popular playlists
+- **Key Features**:
+  - Recommended playlists display
+  - High-quality playlist filtering
+  - Category-based playlist browsing
+  - Sort by play count
+  - One-click download of hot playlists
 
-#### 1. 创建必要目录和文件
+### 5. Task Manager (`/task-manager`)
+- **Function Description**: Manage all download tasks
+- **Key Features**:
+  - Real-time task status monitoring
+  - Download progress visualization
+  - Task cancellation functionality
+  - Historical task records
+  - Error information viewing
+
+### Global Features
+- **QR Code Login**: Support NetEase account login for VIP audio quality
+- **Responsive Design**: Compatible with desktop and mobile devices
+- **Real-time Notifications**: Download completion and error alerts
+
+## 🚀 Deployment & Usage
+
+### Docker Deployment (Recommended)
+
+#### Environment Requirements
+- Docker
+- Docker Compose
+
+#### Deployment Steps
+
+1. **Prepare directories and files**
 ```bash
-# 创建下载目录
+# Create necessary directories
 mkdir -p downloads
 mkdir -p logs
 
-# 复制配置文件（可选）
+# Copy configuration file (optional)
 cp config.json.example config.json
 ```
 
-#### 2. 使用docker-compose部署
+2. **Start services**
 ```bash
-# 启动服务
+# Start using docker-compose
 docker-compose up -d
 
-# 查看服务状态
+# Check service status
 docker-compose logs -f
 ```
 
-#### 3. 访问应用
-- 前端界面：http://localhost:3000
-- 后端API：http://localhost:5000
+3. **Access the application**
+- Frontend interface: http://localhost:3000
+- Backend API: http://localhost:5000
 
-### 手动部署
+#### Docker Image Information
+- **Image Name**: `adolphicky/auto-music`
+- **Base Image**: Python 3.13-slim + Node.js 18
+- **Process Management**: Supervisor
+- **Health Check**: Automatic service status monitoring
 
-#### 后端部署
+### Manual Deployment
+
+#### Backend Deployment
+
+1. **Install Python dependencies**
 ```bash
-# 安装Python依赖
 pip install -r requirements.txt
+```
 
-# 配置环境
+2. **Configure environment**
+```bash
 cp config.json.example config.json
-# 编辑config.json文件配置参数
+# Edit config.json file to configure parameters
+```
 
-# 启动后端服务
+3. **Start backend service**
+```bash
 python main.py
 ```
 
-#### 前端部署
+#### Frontend Deployment
+
+1. **Install dependencies**
 ```bash
-# 安装依赖
 npm install
+```
 
-# 开发模式运行
+2. **Development mode**
+```bash
 npm run dev
+```
 
-# 生产构建
+3. **Production build**
+```bash
 npm run build
 ```
 
-## ⚙️ 配置说明
+## ⚙️ Configuration & Development
 
-### 主要配置参数
-配置文件：`config.json`
+### Configuration File Description
+
+Configuration file: `config.json`
 
 ```json
 {
-  "host": "0.0.0.0",
-  "port": 5000,
-  "debug": false,
-  "log_level": "INFO",
-  
-  "download": {
-    "base_dir": "downloads",
-    "max_concurrent": 3,
-    "default_quality": "lossless",
-    "include_lyric": true
-  },
-  
-  "cookie": {
-    "cookie_file": "cookie.txt",
-    "qr_login_max_attempts": 60
-  }
+    // Server configuration
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false,
+    "max_file_size": 524288000,
+    "request_timeout": 30,
+    "log_level": "INFO",
+    "cors_origins": "*",
+    
+    // General download configuration
+    "download": {
+        "base_dir": "downloads",
+        "max_concurrent": 3,
+        "default_quality": "lossless",
+        "include_lyric": true
+    },
+    
+    // Music download configuration
+    "music_download": {
+        "sub_dir": "",
+        "max_concurrent": 3
+    },
+    
+    // Playlist download configuration
+    "playlist_download": {
+        "sub_dir": "",
+        "max_concurrent": 3,
+        "default_quality": "lossless",
+        "include_lyric": true
+    },
+    
+    // Artist download configuration
+    "artist_download": {
+        "sub_dir": "",
+        "max_concurrent": 3,
+        "default_quality": "lossless",
+        "default_limit": 50,
+        "default_match_mode": "exact_single",
+        "include_lyric": true,
+        "search_page_size": 100
+    },
+    
+    // Database configuration
+    "database": {
+        "db_path": "downloads.db",
+        "recent_downloads_limit": 50
+    },
+    
+    // Cookie configuration
+    "cookie": {
+        "cookie_file": "cookie.txt",
+        "qr_login_max_attempts": 60
+    }
 }
 ```
 
-### 音质选项
-- `standard` - 标准音质
-- `exhigh` - 极高音质  
-- `lossless` - 无损音质
-- `hires` - Hi-Res音质
-- `sky` - 沉浸环绕声
-- `dolby` - 杜比全景声
+### Audio Quality Options
+- `standard` - Standard Quality
+- `exhigh` - High Quality  
+- `lossless` - Lossless Quality
+- `hires` - Hi-Res Quality
+- `sky` - Immersive Surround Sound
+- `dolby` - Dolby Atmos
 
-## 📁 项目结构
+### Development Environment Setup
 
-```
-music-auto/
-├── src/                    # 前端源码
-│   ├── components/         # Vue组件
-│   │   ├── SearchComponent.vue          # 音乐搜索
-│   │   ├── PlaylistSearchComponent.vue  # 歌单搜索
-│   │   ├── ArtistDownloadComponent.vue  # 歌手下载
-│   │   ├── HotPlaylistsComponent.vue    # 热门歌单
-│   │   └── QRLoginComponent.vue         # 二维码登录
-│   ├── services/
-│   │   └── apiService.js   # API服务
-│   ├── App.vue            # 主应用
-│   └── main.js            # 入口文件
-├── *.py                   # 后端Python文件
-├── config.json.example    # 配置示例
-├── docker-compose.yml     # Docker编排
-├── Dockerfile            # Docker镜像构建
-└── requirements.txt      # Python依赖
-```
-
-## 🔧 API接口
-
-### 认证相关
-- `GET /api/auth/qr-code` - 获取登录二维码
-- `GET /api/auth/check-login` - 检查登录状态
-- `POST /api/auth/save-cookie` - 保存Cookie
-
-### 音乐相关
-- `GET /api/music/search` - 搜索音乐
-- `POST /api/music/download` - 下载音乐
-- `GET /api/playlist/detail` - 获取歌单详情
-- `POST /api/playlist/download` - 下载歌单
-- `GET /api/artist/songs` - 获取歌手歌曲
-- `POST /api/artist/download` - 下载歌手作品
-- `GET /api/hot/playlists` - 获取热门歌单
-
-### 系统相关
-- `GET /health` - 健康检查
-
-## 🐳 Docker镜像信息
-
-**镜像名称**: `adolphicky/auto-music`
-
-**镜像特性**:
-- 基于Python 3.13-slim
-- 包含Node.js 18环境
-- 使用Supervisor管理进程
-- 健康检查支持
-- 自动构建前端
-
-**端口映射**:
-- 前端界面：3000 → 3000（主机）
-- 后端API：5000（容器内部）
-
-**数据卷挂载**:
-- `./downloads` → `/app/downloads`（下载目录）
-- `./config.json` → `/app/config.json`（配置文件）
-- `./cookie.txt` → `/app/cookie.txt`（Cookie文件）
-- `./logs` → `/var/log/supervisor`（日志目录）
-
-## 🔒 安全说明
-
-- 应用需要网易云账号登录才能下载VIP音质
-- Cookie信息存储在本地文件中，请妥善保管
-- 建议在生产环境中配置适当的访问控制
-- 默认监听所有网络接口，可根据需要修改绑定地址
-
-## 📝 使用说明
-
-1. **首次使用**：访问前端界面，点击二维码登录进行账号认证
-2. **搜索音乐**：在搜索页面输入关键词，选择音质后下载
-3. **批量下载**：使用歌单或歌手功能进行批量下载
-4. **下载管理**：下载的文件保存在`downloads`目录中
-
-## 🛠️ 开发说明
-
-### 后端开发
+#### Backend Development
 ```bash
-# 安装依赖
+# Install dependencies
 pip install -r requirements.txt
 
-# 开发模式运行
+# Development mode
 python main.py
+
+# Debug mode (enable detailed logs)
+python main.py --debug
 ```
 
-### 前端开发
+#### Frontend Development
 ```bash
-# 进入前端目录
-cd src
-
-# 安装依赖
+# Install dependencies
 npm install
 
-# 开发模式
+# Development mode
 npm run dev
 
-# 构建生产版本
+# Production build
 npm run build
+
+# Preview build results
+npm run preview
 ```
 
-## 📄 许可证
+### Project Structure
+```
+music-auto/
+├── src/                    # Frontend source code
+│   ├── components/         # Vue components
+│   │   ├── SearchComponent.vue          # Music search
+│   │   ├── PlaylistSearchComponent.vue  # Playlist search
+│   │   ├── ArtistDownloadComponent.vue  # Artist download
+│   │   ├── HotPlaylistsComponent.vue    # Hot playlists
+│   │   ├── TaskManagerComponent.vue     # Task management
+│   │   └── QRLoginComponent.vue         # QR code login
+│   ├── services/
+│   │   └── apiService.js   # API service
+│   ├── router/
+│   │   └── index.js        # Router configuration
+│   ├── App.vue            # Main application
+│   └── main.js            # Entry file
+├── *.py                   # Backend Python files
+├── config.json.example    # Configuration example
+├── docker-compose.yml     # Docker orchestration
+├── Dockerfile            # Docker image build
+├── requirements.txt      # Python dependencies
+└── package.json         # Frontend dependencies
+```
 
-本项目基于MIT许可证开源。
+### API Documentation
 
-## 🤝 贡献
+#### Authentication
+- `GET /api/auth/qr-code` - Get login QR code
+- `GET /api/auth/check-login` - Check login status
+- `POST /api/auth/save-cookie` - Save Cookie
 
-欢迎提交Issue和Pull Request来改进本项目。
+#### Music
+- `GET /api/music/search` - Search music
+- `POST /api/music/download` - Download music
+- `GET /api/playlist/detail` - Get playlist details
+- `POST /api/playlist/download` - Download playlist
+- `GET /api/artist/songs` - Get artist songs
+- `POST /api/artist/download` - Download artist works
+- `GET /api/hot/playlists` - Get hot playlists
 
-## ⚠️ 免责声明
+#### Task Management
+- `GET /api/tasks` - Get all tasks
+- `GET /api/tasks/<task_id>` - Get task details
+- `POST /api/tasks/<task_id>/cancel` - Cancel task
+- `POST /api/tasks/clear-cancelled` - Clear cancelled tasks
 
-本项目仅用于学习和研究目的，请勿用于商业用途。下载的音乐文件请遵守相关版权法律法规，支持正版音乐。
+#### System
+- `GET /health` - Health check
+- `GET /api/info` - API information
+
+## 🐳 Docker Image Information
+
+**Image Name**: `adolphicky/auto-music`
+
+**Image Features**:
+- Based on Python 3.13-slim
+- Includes Node.js 18 environment
+- Uses Supervisor for process management
+- Health check support
+- Automatic frontend build
+
+**Port Mapping**:
+- Frontend interface: 3000 → 3000 (host)
+- Backend API: 5000 (container internal)
+
+**Volume Mounts**:
+- `./downloads` → `/app/downloads` (download directory)
+- `./config.json` → `/app/config.json` (configuration file)
+- `./cookie.txt` → `/app/cookie.txt` (Cookie file)
+- `./logs` → `/var/log` (log directory)
+
+## 🔒 Security Notes
+
+- Application requires NetEase account login for VIP audio quality
+- Cookie information is stored in local files, please keep it secure
+- Recommended to configure appropriate access control in production environments
+- Default listens on all network interfaces, can be modified as needed
+
+## 📝 Usage Instructions
+
+1. **First Use**: Access the frontend interface, click QR code login for account authentication
+2. **Search Music**: Enter keywords on the search page, select audio quality and download
+3. **Batch Download**: Use playlist or artist functions for batch downloads
+4. **Download Management**: Downloaded files are saved in the `downloads` directory
+5. **Task Monitoring**: Check download progress and status in the task management page
+
+## 📄 License
+
+This project is open source under the MIT License.
+
+## 🤝 Contributing
+
+Welcome to submit Issues and Pull Requests to improve this project.
+
+## ⚠️ Disclaimer
+
+This project is for learning and research purposes only. Please do not use it for commercial purposes. Downloaded music files should comply with relevant copyright laws and regulations. Support genuine music.

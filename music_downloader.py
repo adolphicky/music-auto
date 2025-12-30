@@ -100,12 +100,13 @@ class MusicDownloader:
             create_artist_dir: 是否创建歌手目录，默认为True
         """
         self.create_artist_dir = create_artist_dir
+        
         # 从配置文件读取默认配置
         try:
             from main import config
             # 使用统一下载目录配置
             base_dir = config.download_config.get('base_dir', 'downloads')
-            music_sub_dir = config.music_download_config.get('sub_dir', 'music')
+            music_sub_dir = config.music_download_config.get('sub_dir')
             
             # 如果提供了download_dir参数，直接使用；否则使用配置的组合路径
             if download_dir:
@@ -257,19 +258,41 @@ class MusicDownloader:
         except Exception as e:
             raise DownloadException(f"获取音乐信息时发生错误: {e}")
     
-    def download_music_file(self, music_id: int, quality: str = "standard") -> DownloadResult:
+    def download_music_file(self, music_id: int, quality: str = "standard", task_id: str = None) -> DownloadResult:
         """下载音乐文件到本地
         
         Args:
             music_id: 音乐ID
             quality: 音质等级
+            task_id: 任务ID（用于取消检查）
             
         Returns:
             下载结果对象
         """
         try:
+            # 检查任务是否已被取消
+            if task_id:
+                from task_manager import task_manager, TaskStatus
+                task_info = task_manager.get_task(task_id)
+                if task_info and task_info.status == TaskStatus.CANCELLED:
+                    self.logger.info(f"任务 {task_id} 已被取消，停止下载音乐: {music_id}")
+                    return DownloadResult(
+                        success=False,
+                        error_message='任务已被用户取消'
+                    )
+            
             # 获取音乐信息
             music_info = self.get_music_info(music_id, quality)
+            
+            # 检查任务是否已被取消（在获取信息后再次检查）
+            if task_id:
+                task_info = task_manager.get_task(task_id)
+                if task_info and task_info.status == TaskStatus.CANCELLED:
+                    self.logger.info(f"任务 {task_id} 已被取消，停止下载音乐: {music_id}")
+                    return DownloadResult(
+                        success=False,
+                        error_message='任务已被用户取消'
+                    )
             
             # 生成文件名
             filename = f"{music_info.artists} - {music_info.name}"
@@ -342,9 +365,27 @@ class MusicDownloader:
             response = requests.get(music_info.download_url, stream=True, timeout=30)
             response.raise_for_status()
             
-            # 写入文件
+            # 写入文件，并在每次写入时检查任务取消状态
             with open(file_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
+                    # 检查任务是否已被取消
+                    if task_id:
+                        from task_manager import task_manager, TaskStatus
+                        task_info = task_manager.get_task(task_id)
+                        if task_info and task_info.status == TaskStatus.CANCELLED:
+                            self.logger.info(f"任务 {task_id} 已被取消，停止下载音乐: {music_id}")
+                            # 删除已下载的部分文件
+                            if file_path.exists():
+                                try:
+                                    file_path.unlink()
+                                    self.logger.info(f"已删除部分下载的文件: {file_path}")
+                                except Exception as e:
+                                    self.logger.warning(f"删除部分下载文件失败: {e}")
+                            return DownloadResult(
+                                success=False,
+                                error_message='任务已被用户取消'
+                            )
+                    
                     if chunk:
                         f.write(chunk)
             

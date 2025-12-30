@@ -413,14 +413,24 @@ export default {
           'lossless', 
           true, 
           3,
-          selectedSongIds  // 传递选中的歌曲ID列表
+          selectedSongIds,  // 传递选中的歌曲ID列表
+          true  // 异步模式
         )
         
         if (response.status === 200) {
-          downloadResults.value = [{
-            success: true,
-            message: `${operationName}完成！${response.message || '下载成功'}`
-          }]
+          if (response.data.async) {
+            // 异步下载模式，返回任务ID
+            const taskId = response.data.task_id
+            downloadResults.value = [{
+              success: true,
+              message: `${operationName}任务已提交！\n任务ID: ${taskId}\n请到任务管理页面查看进度`
+            }]
+          } else {
+            downloadResults.value = [{
+              success: true,
+              message: `${operationName}完成！${response.message || '下载成功'}`
+            }]
+          }
         } else {
           downloadResults.value = [{
             success: false,
@@ -457,13 +467,22 @@ export default {
           downloadMessage.value = `${operationName}中... (${i + 1}/${songIds.length})`
           
           try {
-            const response = await apiService.downloadMusic(songId, 'lossless', 'json')
+            const response = await apiService.downloadMusic(songId, 'lossless', 'json', true)  // 异步模式
             
             if (response.status === 200) {
-              results.push({
-                success: true,
-                message: `下载成功: ${response.data.name} - ${response.data.artist}`
-              })
+              if (response.data.async) {
+                // 异步下载模式，返回任务ID
+                const taskId = response.data.task_id
+                results.push({
+                  success: true,
+                  message: `异步下载任务已提交！\n任务ID: ${taskId}\n请到任务管理页面查看进度`
+                })
+              } else {
+                results.push({
+                  success: true,
+                  message: `下载成功: ${response.data.name} - ${response.data.artist}`
+                })
+              }
               successCount++
             } else {
               failedSongs.push({
@@ -485,7 +504,7 @@ export default {
         if (successCount > 0) {
           results.push({
             success: true,
-            message: `成功下载 ${successCount} 首歌曲`
+            message: `成功提交 ${successCount} 个下载任务`
           })
         }
 
@@ -511,7 +530,7 @@ export default {
         // 添加总结信息
         results.push({
           success: true,
-          message: `${operationName}完成！成功: ${successCount}首，失败: ${failCount}首`
+          message: `${operationName}完成！成功提交: ${successCount}个任务，失败: ${failCount}首`
         })
 
         downloadResults.value = results

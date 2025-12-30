@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 from urllib.parse import quote
 from flask import Flask, request, send_file, render_template, Response
+from flask_socketio import SocketIO, emit
 
 try:
     from music_api import (
@@ -32,6 +33,12 @@ try:
     from artist_downloader import ArtistDownloader, ArtistDownloadConfig
     from hot_playlist_fetcher import HotPlaylistFetcher
     from qr_login import QRLoginClient
+    from task_manager import task_manager, init_task_manager, shutdown_task_manager
+    from async_downloader import (
+        submit_music_download_task, 
+        submit_playlist_download_task, 
+        submit_artist_download_task
+    )
 except ImportError as e:
     print(f"导入模块失败: {e}")
     print("请确保所有依赖模块存在且可用")
@@ -133,7 +140,8 @@ class MusicAPIService:
     def _setup_logger(self) -> logging.Logger:
         """设置日志记录器"""
         logger = logging.getLogger('music_api')
-        logger.setLevel(getattr(logging, self.config.log_level.upper()))
+        # 强制设置为INFO级别以显示调试日志
+        logger.setLevel(logging.INFO)
         
         if not logger.handlers:
             # 控制台处理器
@@ -249,8 +257,34 @@ class MusicAPIService:
 # 创建Flask应用和服务实例
 config = APIConfig()
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 api_service = MusicAPIService(config)
 qr_login_client = QRLoginClient()
+
+
+def send_task_progress_update(task_id):
+    """发送任务进度更新到所有订阅的客户端"""
+    try:
+        api_service.logger.info(f"开始发送任务进度更新: {task_id}")
+        task = task_manager.get_task(task_id)
+        if task:
+            task_info = {
+                'task_id': task.task_id,
+                'task_type': task.task_type,
+                'status': task.status.value,
+                'progress': task.progress,
+                'total_items': task.total_items,
+                'processed_items': task.processed_items,
+                'error_message': task.error_message,
+                'metadata': task.metadata
+            }
+            api_service.logger.info(f"准备发送WebSocket消息: {task_info}")
+            socketio.emit('task_progress', task_info)
+            api_service.logger.info(f"成功发送任务进度更新: {task_id} - {task.progress}%")
+        else:
+            api_service.logger.warning(f"任务不存在，无法发送进度更新: {task_id}")
+    except Exception as e:
+        api_service.logger.error(f"发送任务进度更新失败: {task_id}, 错误: {e}")
 
 
 @app.before_request
@@ -576,18 +610,47 @@ def search_music_api():
         cookies = api_service._get_cookies()
         search_result = api_service.netease_api.search_music(keyword, cookies, limit, offset, int(search_type))
         
-        # search_music现在返回的是包含歌曲列表和总数信息的字典
-        songs = search_result.get('songs', [])
-        total_count = search_result.get('total', 0)
-        
-        # 添加艺术家字符串（如果需要）
-        if songs:
-            for song in songs:
-                if 'artists' in song:
-                    song['artist_string'] = song['artists']
-        
-        # 直接返回歌曲列表，将总数作为额外字段
-        return APIResponse.success(songs, "搜索完成", total=total_count)
+        # 根据搜索类型处理返回数据
+        if search_type == '1000':  # 歌单搜索
+            # 歌单搜索返回的是歌单列表，但数据结构在'songs'字段中
+            playlists = search_result.get('songs', [])
+            total_count = search_result.get('total', 0)
+            
+            # 保存原始数据用于比对
+            original_playlists = None
+            if playlists and isinstance(playlists, list):
+                original_playlists = playlists.copy()
+            elif playlists and isinstance(playlists, dict) and 'songs' in playlists:
+                original_playlists = playlists['songs'].copy() if isinstance(playlists['songs'], list) else None
+            
+            # 按播放量从大到小排序
+            if playlists and isinstance(playlists, list):
+                playlists.sort(key=lambda x: x.get('playCount', 0), reverse=True)
+            elif playlists and isinstance(playlists, dict):
+                # 如果是字典，尝试提取歌单列表
+                api_service.logger.warning("歌单搜索返回的是字典，尝试提取songs字段")
+                if 'songs' in playlists:
+                    playlists = playlists['songs']
+                    if isinstance(playlists, list):
+                        playlists.sort(key=lambda x: x.get('playCount', 0), reverse=True)
+            
+            
+            # 返回歌单列表
+            return APIResponse.success(playlists, "歌单搜索完成", total=total_count)
+            return APIResponse.success(playlists, "歌单搜索完成", total=total_count)
+        else:
+            # 其他搜索类型（歌曲、专辑、歌手等）
+            songs = search_result.get('songs', [])
+            total_count = search_result.get('total', 0)
+            
+            # 添加艺术家字符串（如果需要）
+            if songs:
+                for song in songs:
+                    if 'artists' in song:
+                        song['artist_string'] = song['artists']
+            
+            # 返回歌曲列表
+            return APIResponse.success(songs, "搜索完成", total=total_count)
         
     except ValueError as e:
         return APIResponse.error(f"参数格式错误: {str(e)}")
@@ -655,13 +718,19 @@ def get_album():
 @app.route('/api/download', methods=['GET', 'POST'])
 @app.route('/api/Download', methods=['GET', 'POST'])  # 向后兼容
 def download_music_api():
-    """下载音乐API"""
+    """下载音乐API - 支持同步和异步下载"""
     try:
         # 获取请求参数
         data = api_service._safe_get_request_data()
         music_id = data.get('id')
         quality = data.get('quality', 'lossless')
         return_format = data.get('format', 'file')  # file 或 json
+        # 处理async参数，支持布尔值和字符串值
+        async_param = data.get('async', 'false')
+        if isinstance(async_param, bool):
+            async_mode = async_param
+        else:
+            async_mode = str(async_param).lower() == 'true'  # 是否异步下载
         
         # 参数验证
         validation_error = api_service._validate_request_params({'music_id': music_id})
@@ -678,6 +747,16 @@ def download_music_api():
             return APIResponse.error("返回格式只支持 'file' 或 'json'")
         
         music_id = api_service._extract_music_id(music_id)
+        
+        # 如果是异步模式，提交任务并返回任务ID
+        if async_mode:
+            task_id = submit_music_download_task(music_id, quality)
+            return APIResponse.success(
+                {'task_id': task_id, 'async': True}, 
+                "异步下载任务已提交，请使用任务ID查询进度"
+            )
+        
+        # 同步下载模式（保持原有逻辑）
         cookies = api_service._get_cookies()
         
         # 获取音乐基本信息
@@ -713,7 +792,7 @@ def download_music_api():
         
         # 创建专用的下载器，使用正确的目录结构
         from music_downloader import MusicDownloader
-        music_sub_dir = api_service.config.music_download_config.get('sub_dir', '')
+        music_sub_dir = api_service.config.music_download_config.get('sub_dir')
         music_download_dir = api_service.downloads_path / music_sub_dir if music_sub_dir else api_service.downloads_path
         
         # 创建下载器，设置create_artist_dir=True以创建歌手目录
@@ -780,7 +859,7 @@ def download_music_api():
 
 @app.route('/api/playlist/download', methods=['POST'])
 def download_playlist():
-    """歌单批量下载API"""
+    """歌单批量下载API - 支持同步和异步下载"""
     try:
         # 获取请求参数
         data = api_service._safe_get_request_data()
@@ -796,6 +875,12 @@ def download_playlist():
             include_lyric = True
         max_concurrent = int(data.get('max_concurrent', 3))
         selected_songs = data.get('selected_songs')  # 选中的歌曲ID列表
+        # 处理async参数，支持布尔值和字符串值
+        async_param = data.get('async', 'false')
+        if isinstance(async_param, bool):
+            async_mode = async_param
+        else:
+            async_mode = str(async_param).lower() == 'true'  # 是否异步下载
         
         # 参数验证
         validation_error = api_service._validate_request_params({'playlist_id': playlist_id})
@@ -807,9 +892,27 @@ def download_playlist():
         if quality not in valid_qualities:
             return APIResponse.error(f"无效的音质参数，支持: {', '.join(valid_qualities)}")
         
+        # 如果是异步模式，提交任务并返回任务ID
+        if async_mode:
+            task_id = submit_playlist_download_task(
+                playlist_id=playlist_id,
+                quality=quality,
+                include_lyric=include_lyric,
+                max_concurrent=max_concurrent,
+                selected_songs=selected_songs
+            )
+            return APIResponse.success(
+                {'task_id': task_id, 'async': True}, 
+                "异步歌单下载任务已提交，请使用任务ID查询进度"
+            )
+        
+        # 同步下载模式（保持原有逻辑）
         # 创建下载配置
-        playlist_sub_dir = api_service.config.playlist_download_config.get('sub_dir', 'playlists')
-        playlist_download_dir = api_service.downloads_path / playlist_sub_dir
+        playlist_sub_dir = api_service.config.playlist_download_config.get('sub_dir')
+        if playlist_sub_dir:
+            playlist_download_dir = api_service.downloads_path / playlist_sub_dir
+        else:
+            playlist_download_dir = api_service.downloads_path
         playlist_download_dir.mkdir(exist_ok=True, parents=True)
         
         config = PlaylistDownloadConfig(
@@ -839,7 +942,7 @@ def download_playlist():
 
 @app.route('/api/artist/download', methods=['POST'])
 def download_artist_songs():
-    """歌手歌曲批量下载API"""
+    """歌手歌曲批量下载API - 支持同步和异步下载"""
     try:
         # 获取请求参数
         data = api_service._safe_get_request_data()
@@ -860,6 +963,12 @@ def download_artist_songs():
             include_lyric = True
             
         max_concurrent = int(data.get('max_concurrent', 3))
+        # 处理async参数，支持布尔值和字符串值
+        async_param = data.get('async', 'false')
+        if isinstance(async_param, bool):
+            async_mode = async_param
+        else:
+            async_mode = str(async_param).lower() == 'true'  # 是否异步下载
         
         # 参数验证
         validation_error = api_service._validate_request_params({'artist_name': artist_name})
@@ -876,9 +985,28 @@ def download_artist_songs():
         if match_mode not in valid_modes:
             return APIResponse.error(f"无效的匹配模式，支持: {', '.join(valid_modes)}")
         
+        # 如果是异步模式，提交任务并返回任务ID
+        if async_mode:
+            task_id = submit_artist_download_task(
+                artist_name=artist_name,
+                quality=quality,
+                limit=limit,
+                match_mode=match_mode,
+                include_lyric=include_lyric,
+                max_concurrent=max_concurrent
+            )
+            return APIResponse.success(
+                {'task_id': task_id, 'async': True}, 
+                "异步艺术家下载任务已提交，请使用任务ID查询进度"
+            )
+        
+        # 同步下载模式（保持原有逻辑）
         # 创建下载配置
-        artist_sub_dir = api_service.config.artist_download_config.get('sub_dir', 'artists')
-        artist_download_dir = api_service.downloads_path / artist_sub_dir
+        artist_sub_dir = api_service.config.artist_download_config.get('sub_dir')
+        if artist_sub_dir:
+            artist_download_dir = api_service.downloads_path / artist_sub_dir
+        else:
+            artist_download_dir = api_service.downloads_path
         artist_download_dir.mkdir(exist_ok=True, parents=True)
         
         config = ArtistDownloadConfig(
@@ -931,11 +1059,130 @@ def get_hot_playlists():
             # 使用新的分类歌单API，支持按分类获取歌单
             playlists = fetcher.get_category_playlists(category, limit)
         
+        # 按播放量从大到小排序（对网易云API原始数据进行排序）
+        if playlists and isinstance(playlists, list):
+            playlists.sort(key=lambda x: x.get('playCount', 0), reverse=True)
+        elif playlists and isinstance(playlists, dict):
+            # 如果是字典，尝试提取歌单列表
+            if 'playlists' in playlists:
+                playlists = playlists['playlists']
+                if isinstance(playlists, list):
+                    playlists.sort(key=lambda x: x.get('playCount', 0), reverse=True)
+        
+        # 歌单去重逻辑（基于歌单ID）
+        if playlists and isinstance(playlists, list):
+            seen_ids = set()
+            unique_playlists = []
+            for playlist in playlists:
+                playlist_id = playlist.get('id')
+                if playlist_id and playlist_id not in seen_ids:
+                    seen_ids.add(playlist_id)
+                    unique_playlists.append(playlist)
+            playlists = unique_playlists
+        
         return APIResponse.success(playlists, "获取热门歌单成功")
         
     except Exception as e:
         api_service.logger.error(f"获取热门歌单异常: {e}\n{traceback.format_exc()}")
         return APIResponse.error(f"获取热门歌单失败: {str(e)}", 500)
+
+
+@app.route('/api/tasks', methods=['GET'])
+def get_all_tasks():
+    """获取所有任务信息API"""
+    try:
+        tasks = task_manager.get_all_tasks()
+        
+        # 转换为前端友好的格式
+        task_list = []
+        for task in tasks:
+            task_list.append({
+                'task_id': task.task_id,
+                'task_type': task.task_type,
+                'status': task.status.value,
+                'created_at': task.created_at,
+                'started_at': task.started_at,
+                'completed_at': task.completed_at,
+                'progress': task.progress,
+                'total_items': task.total_items,
+                'processed_items': task.processed_items,
+                'error_message': task.error_message,
+                'metadata': task.metadata
+            })
+        
+        return APIResponse.success({'tasks': task_list}, "获取任务列表成功")
+        
+    except Exception as e:
+        api_service.logger.error(f"获取任务列表异常: {e}")
+        return APIResponse.error(f"获取任务列表失败: {str(e)}", 500)
+
+
+@app.route('/api/tasks/<task_id>', methods=['GET'])
+def get_task_info(task_id):
+    """获取单个任务信息API"""
+    try:
+        task = task_manager.get_task(task_id)
+        
+        if not task:
+            return APIResponse.error("任务不存在", 404)
+        
+        task_info = {
+            'task_id': task.task_id,
+            'task_type': task.task_type,
+            'status': task.status.value,
+            'created_at': task.created_at,
+            'started_at': task.started_at,
+            'completed_at': task.completed_at,
+            'progress': task.progress,
+            'total_items': task.total_items,
+            'processed_items': task.processed_items,
+            'error_message': task.error_message,
+            'result': task.result,
+            'metadata': task.metadata
+        }
+        
+        return APIResponse.success(task_info, "获取任务信息成功")
+        
+    except Exception as e:
+        api_service.logger.error(f"获取任务信息异常: {e}")
+        return APIResponse.error(f"获取任务信息失败: {str(e)}", 500)
+
+
+@app.route('/api/tasks/<task_id>/cancel', methods=['POST'])
+def cancel_task(task_id):
+    """取消任务API"""
+    try:
+        success = task_manager.cancel_task(task_id)
+        
+        if success:
+            return APIResponse.success({'cancelled': True}, "任务取消成功")
+        else:
+            return APIResponse.error("无法取消任务，任务可能已完成或不存在", 400)
+        
+    except Exception as e:
+        api_service.logger.error(f"取消任务异常: {e}")
+        return APIResponse.error(f"取消任务失败: {str(e)}", 500)
+
+@app.route('/api/tasks/clear-cancelled', methods=['POST'])
+def clear_cancelled_tasks():
+    """清理已取消的任务API"""
+    try:
+        result = task_manager.clear_cancelled_tasks()
+        
+        if result['success']:
+            return APIResponse.success(
+                result, 
+                f"已成功清理 {result['cleared_count']} 个已取消的任务"
+            )
+        else:
+            return APIResponse.error(
+                f"清理已取消任务失败: {result.get('error_message', '未知错误')}", 
+                500
+            )
+        
+    except Exception as e:
+        api_service.logger.error(f"清理已取消任务异常: {e}")
+        return APIResponse.error(f"清理已取消任务失败: {str(e)}", 500)
 
 
 @app.route('/api/info', methods=['GET'])
@@ -956,6 +1203,9 @@ def api_info():
                 '/playlist/download': 'POST - 歌单批量下载',
                 '/artist/download': 'POST - 歌手歌曲批量下载',
                 '/hot/playlists': 'GET/POST - 热门歌单发现',
+                '/api/tasks': 'GET - 获取任务列表',
+                '/api/tasks/<task_id>': 'GET - 获取任务详情',
+                '/api/tasks/<task_id>/cancel': 'POST - 取消任务',
                 '/api/info': 'GET - API信息'
             },
             'supported_qualities': [
@@ -966,7 +1216,9 @@ def api_info():
                 'downloads_dir': str(api_service.downloads_path.absolute()),
                 'max_file_size': f"{config.max_file_size // (1024*1024)}MB",
                 'request_timeout': f"{config.request_timeout}s"
-            }
+            },
+            'async_support': True,
+            'websocket_support': True
         }
         
         return APIResponse.success(info, "API信息获取成功")
@@ -976,30 +1228,105 @@ def api_info():
         return APIResponse.error(f"获取API信息失败: {str(e)}", 500)
 
 
-def start_api_server():
-    """启动API服务器"""
+@socketio.on('connect')
+def handle_connect():
+    """WebSocket连接事件"""
+    api_service.logger.info(f"WebSocket客户端已连接: {request.sid}")
+    emit('connected', {'message': 'WebSocket连接成功', 'timestamp': time.time()})
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """WebSocket断开连接事件"""
+    api_service.logger.info(f"WebSocket客户端已断开: {request.sid}")
+
+
+@socketio.on('subscribe_task')
+def handle_subscribe_task(data):
+    """订阅任务进度更新"""
+    task_id = data.get('task_id')
+    if task_id:
+        api_service.logger.info(f"客户端订阅任务进度: {task_id}")
+        # 立即发送当前任务状态
+        task = task_manager.get_task(task_id)
+        if task:
+            task_info = {
+                'task_id': task.task_id,
+                'task_type': task.task_type,
+                'status': task.status.value,
+                'progress': task.progress,
+                'total_items': task.total_items,
+                'processed_items': task.processed_items,
+                'error_message': task.error_message,
+                'metadata': task.metadata
+            }
+            emit('task_progress', task_info, room=request.sid)
+        else:
+            emit('task_error', {'message': f'任务 {task_id} 不存在'}, room=request.sid)
+
+
+
+
+
+async def start_api_server_async():
+    """异步启动API服务器"""
     try:
         print("🚀 网易云音乐API服务启动中...")
         print(f"📡 服务地址: http://{config.host}:{config.port}")
         print(f"📁 下载目录: {api_service.downloads_path.absolute()}")
         print(f"📋 日志级别: {config.log_level}")
         print(f"⏰ 启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # 初始化任务管理器
+        print("🔄 初始化任务管理器...")
+        await init_task_manager()
+        
+        # 注册WebSocket推送回调函数
+        from task_manager import task_manager
+        task_manager.set_progress_callback(send_task_progress_update)
+        print("✅ 任务管理器初始化完成，WebSocket回调已注册")
+        
         print("🌟 服务已就绪，等待请求...\n")
         
-        # 启动Flask应用
-        app.run(
-            host=config.host,
-            port=config.port,
-            debug=config.debug,
-            threaded=True
-        )
+        # 启动SocketIO服务器（支持WebSocket）
+        print(f"🚀 启动SocketIO服务器...")
+        # 在后台线程中运行SocketIO服务器，避免阻塞事件循环
+        import threading
+        import asyncio
+        def run_socketio():
+            socketio.run(
+                app,
+                host=config.host,
+                port=config.port,
+                debug=config.debug,
+                allow_unsafe_werkzeug=True,
+                use_reloader=False
+            )
+        
+        socketio_thread = threading.Thread(target=run_socketio, daemon=True)
+        socketio_thread.start()
+        
+        # 保持主线程运行，让任务管理器继续工作
+        while True:
+            await asyncio.sleep(1)
         
     except KeyboardInterrupt:
-        print("\n👋 服务已停止")
+        print("\n👋 服务停止中...")
+        # 关闭任务管理器
+        await shutdown_task_manager()
+        print("✅ 任务管理器已关闭")
+        print("👋 服务已停止")
     except Exception as e:
         api_service.logger.error(f"启动服务失败: {e}")
         print(f"❌ 启动失败: {e}")
+        # 关闭任务管理器
+        await shutdown_task_manager()
         sys.exit(1)
+
+def start_api_server():
+    """启动API服务器（兼容性包装）"""
+    import asyncio
+    asyncio.run(start_api_server_async())
 
 
 if __name__ == '__main__':

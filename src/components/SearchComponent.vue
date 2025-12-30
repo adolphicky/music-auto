@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="row">
-      <div class="col-12 col-md-6">
+      <div class="col-12 col-md-8">
         <div class="mb-3">
           <label for="searchKeywords" class="form-label">搜索关键词</label>
           <input 
@@ -14,7 +14,7 @@
           >
         </div>
       </div>
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-md-4">
         <div class="mb-3">
           <label for="searchLimit" class="form-label">返回数量</label>
           <input 
@@ -25,17 +25,6 @@
             min="1" 
             placeholder="留空获取所有数据"
           >
-        </div>
-      </div>
-      <div class="col-12 col-md-3">
-        <div class="mb-3">
-          <label for="searchType" class="form-label">搜索类型</label>
-          <select id="searchType" class="form-select" v-model="searchType">
-            <option value="1">歌曲</option>
-            <option value="10">专辑</option>
-            <option value="100">歌手</option>
-            <option value="1000">歌单</option>
-          </select>
         </div>
       </div>
     </div>
@@ -91,8 +80,8 @@
                   </button>
                   <button 
                     class="btn btn-sm btn-outline-light"
-                    @click="handleDownload(song.id)"
-                    title="下载歌曲"
+                    @click="handleAsyncDownload(song.id)"
+                    title="下载（后台异步执行）"
                   >
                     <i class="fas fa-download"></i>
                   </button>
@@ -112,6 +101,18 @@
       <p class="mt-2 text-muted">正在搜索中，请稍候...</p>
     </div>
 
+    <!-- 成功信息 -->
+    <div v-if="successMessage" class="alert alert-success mt-3" role="alert">
+      <i class="fas fa-check-circle me-2"></i>
+      {{ successMessage }}
+    </div>
+
+    <!-- 错误信息 -->
+    <div v-if="errorMessage" class="alert alert-danger mt-3" role="alert">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      {{ errorMessage }}
+    </div>
+
     <!-- 空状态 -->
     <div v-if="!isSearching && searchResults.length === 0 && hasSearched" class="text-center py-4">
       <i class="fas fa-search fa-3x text-muted mb-3"></i>
@@ -129,10 +130,11 @@ export default {
   setup() {
     const searchKeyword = ref('')
     const searchLimit = ref(10)
-    const searchType = ref('1')
     const searchResults = ref([])
     const isSearching = ref(false)
     const hasSearched = ref(false)
+    const errorMessage = ref('')
+    const successMessage = ref('')
 
     // 格式化时长
     const formatDuration = (ms) => {
@@ -167,30 +169,32 @@ export default {
     // 处理搜索
     const handleSearch = async () => {
       if (!searchKeyword.value.trim()) {
-        alert('请输入搜索关键词')
+        errorMessage.value = '请输入搜索关键词'
         return
       }
 
       isSearching.value = true
       hasSearched.value = true
+      errorMessage.value = ''
+      successMessage.value = ''
 
       try {
         const response = await apiService.searchMusic(
           searchKeyword.value,
           searchLimit.value,
           0,
-          searchType.value
+          '1'  // 默认搜索类型为歌曲
         )
         
         if (response.status === 200) {
           searchResults.value = response.data || []
         } else {
-          alert('搜索失败: ' + (response.message || '未知错误'))
+          errorMessage.value = '搜索失败: ' + (response.message || '未知错误')
           searchResults.value = []
         }
       } catch (error) {
         console.error('搜索错误:', error)
-        alert('搜索过程中发生错误，请重试')
+        errorMessage.value = '搜索过程中发生错误，请重试'
         searchResults.value = []
       } finally {
         isSearching.value = false
@@ -201,33 +205,51 @@ export default {
     const handleParse = (songId) => {
       // 切换到解析标签页并传递歌曲ID
       // 这里需要与父组件通信，暂时先显示提示
-      alert(`准备解析歌曲ID: ${songId}`)
+      successMessage.value = `准备解析歌曲ID: ${songId}`
     }
 
     // 处理下载
-    const handleDownload = async (songId) => {
+    const handleDownload = async (songId, asyncMode = false) => {
       try {
         // 调用下载API
-        const response = await apiService.downloadMusic(songId, 'lossless', 'json')
+        const response = await apiService.downloadMusic(songId, 'lossless', 'json', asyncMode)
         
         if (response.status === 200) {
-          // 下载成功
-          const songInfo = response.data
-          alert(`下载成功！\n歌曲: ${songInfo.name}\n歌手: ${songInfo.artist}\n文件路径: ${songInfo.file_path}`)
+          if (asyncMode && response.data.async) {
+            // 异步下载模式，返回任务ID
+            const taskId = response.data.task_id
+            successMessage.value = `异步下载任务已提交！\n任务ID: ${taskId}\n请到任务管理页面查看进度`
+            
+            // 可以在这里添加任务监控逻辑
+            // monitorTaskProgress(taskId)
+          } else {
+            // 同步下载模式
+            const songInfo = response.data
+            successMessage.value = `下载成功！\n歌曲: ${songInfo.name}\n歌手: ${songInfo.artist}\n文件路径: ${songInfo.file_path}`
+          }
         } else {
           // 下载失败
-          alert(`下载失败: ${response.message || '未知错误'}`)
+          errorMessage.value = `下载失败: ${response.message || '未知错误'}`
         }
       } catch (error) {
         console.error('下载错误:', error)
-        alert('下载过程中发生错误，请重试')
+        errorMessage.value = '下载过程中发生错误，请重试'
       }
+    }
+
+    // 异步下载
+    const handleAsyncDownload = async (songId) => {
+      await handleDownload(songId, true)
+    }
+
+    // 同步下载
+    const handleSyncDownload = async (songId) => {
+      await handleDownload(songId, false)
     }
 
     return {
       searchKeyword,
       searchLimit,
-      searchType,
       searchResults,
       isSearching,
       hasSearched,
@@ -236,7 +258,9 @@ export default {
       handleAlbumImageError,
       handleSearch,
       handleParse,
-      handleDownload
+      handleDownload,
+      handleAsyncDownload,
+      handleSyncDownload
     }
   }
 }

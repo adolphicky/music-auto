@@ -10,110 +10,108 @@
 
     <!-- 热门歌单列表视图 -->
     <div v-else>
-      <div class="row">
-        <!-- 歌单类型选择 -->
-        <div class="col-12 col-md-4">
-          <div class="mb-3">
-            <label for="playlistType" class="form-label">歌单类型</label>
-            <select id="playlistType" class="form-select" v-model="selectedType">
-              <option value="personalized">推荐歌单</option>
-              <option value="categories">分类歌单</option>
-            </select>
+      <!-- 分类标签选择区域 -->
+      <div class="mb-4">
+        <h5 class="mb-3">歌单分类</h5>
+        
+        <!-- 语种分类 -->
+        <div class="mb-3">
+          <h6 class="mb-2">语种</h6>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button 
+              v-for="tag in languageTags" 
+              :key="tag" 
+              class="btn btn-outline-primary btn-sm"
+              :class="{ 'btn-primary': selectedTags.includes(tag) }"
+              @click="toggleTag(tag)"
+            >
+              {{ tag }}
+            </button>
           </div>
         </div>
         
-        <!-- 分类歌单的独立标签选择 -->
-        <div class="col-12" v-if="selectedType === 'categories'">
-          <!-- 当前选择的标签 -->
-          <div class="mb-3">
-            <label class="form-label">已选标签</label>
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              <span v-if="selectedTags.length === 0" class="text-muted">暂无选择</span>
-              <span v-else v-for="tag in selectedTags" :key="tag" class="badge bg-primary d-flex align-items-center">
-                {{ tag }}
-                <button type="button" class="btn-close btn-close-white ms-2" @click="removeTag(tag)" style="font-size: 0.7rem;"></button>
-              </span>
-            </div>
-          </div>
-          
-          <!-- 所有标签分类 -->
-          <div class="mb-3">
-            <h6 class="mb-2">语种</h6>
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              <button v-for="tag in languageTags" :key="tag" 
-                      class="btn btn-outline-primary btn-sm"
-                      :class="{ 'btn-primary': selectedTags.includes(tag) }"
-                      @click="toggleTag(tag)">
-                {{ tag }}
-              </button>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <h6 class="mb-2">风格</h6>
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              <button v-for="tag in styleTags" :key="tag" 
-                      class="btn btn-outline-primary btn-sm"
-                      :class="{ 'btn-primary': selectedTags.includes(tag) }"
-                      @click="toggleTag(tag)">
-                {{ tag }}
-              </button>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <h6 class="mb-2">场景</h6>
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              <button v-for="tag in sceneTags" :key="tag" 
-                      class="btn btn-outline-primary btn-sm"
-                      :class="{ 'btn-primary': selectedTags.includes(tag) }"
-                      @click="toggleTag(tag)">
-                {{ tag }}
-              </button>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <h6 class="mb-2">情感</h6>
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              <button v-for="tag in emotionTags" :key="tag" 
-                      class="btn btn-outline-primary btn-sm"
-                      :class="{ 'btn-primary': selectedTags.includes(tag) }"
-                      @click="toggleTag(tag)">
-                {{ tag }}
-              </button>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <h6 class="mb-2">主题</h6>
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              <button v-for="tag in themeTags" :key="tag" 
-                      class="btn btn-outline-primary btn-sm"
-                      :class="{ 'btn-primary': selectedTags.includes(tag) }"
-                      @click="toggleTag(tag)">
-                {{ tag }}
-              </button>
-            </div>
+        <!-- 风格分类 -->
+        <div class="mb-3">
+          <h6 class="mb-2">风格</h6>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button 
+              v-for="tag in styleTags" 
+              :key="tag" 
+              class="btn btn-outline-primary btn-sm"
+              :class="{ 'btn-primary': selectedTags.includes(tag) }"
+              @click="toggleTag(tag)"
+            >
+              {{ tag }}
+            </button>
           </div>
         </div>
-      </div>
-
-      <div class="text-center mb-4">
-        <button 
-          type="button" 
-          class="btn btn-gradient w-50" 
-          @click="fetchHotPlaylists"
-          :disabled="isLoading"
-        >
-          <i class="fas fa-fire me-2"></i>
-          {{ isLoading ? '加载中...' : '获取热门歌单' }}
-        </button>
+        
+        <!-- 场景分类 -->
+        <div class="mb-3">
+          <h6 class="mb-2">场景</h6>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button 
+              v-for="tag in sceneTags" 
+              :key="tag" 
+              class="btn btn-outline-primary btn-sm"
+              :class="{ 'btn-primary': selectedTags.includes(tag) }"
+              @click="toggleTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          </div>
+        </div>
+        
+        <!-- 情感分类 -->
+        <div class="mb-3">
+          <h6 class="mb-2">情感</h6>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button 
+              v-for="tag in emotionTags" 
+              :key="tag" 
+              class="btn btn-outline-primary btn-sm"
+              :class="{ 'btn-primary': selectedTags.includes(tag) }"
+              @click="toggleTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          </div>
+        </div>
+        
+        <!-- 主题分类 -->
+        <div class="mb-3">
+          <h6 class="mb-2">主题</h6>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button 
+              v-for="tag in themeTags" 
+              :key="tag" 
+              class="btn btn-outline-primary btn-sm"
+              :class="{ 'btn-primary': selectedTags.includes(tag) }"
+              @click="toggleTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          </div>
+        </div>
+        
+        <!-- 当前选择的标签 -->
+        <div class="mb-3" v-if="selectedTags.length > 0">
+          <label class="form-label">已选标签</label>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <span class="badge bg-primary d-flex align-items-center">
+              {{ selectedTags[0] }}
+              <button type="button" class="btn-close btn-close-white ms-2" @click="removeTag(selectedTags[0])" style="font-size: 0.7rem;"></button>
+            </span>
+          </div>
+        </div>
       </div>
 
       <!-- 歌单列表 -->
       <div v-if="playlists.length > 0" class="mt-4">
-        <h5 class="mb-3">热门歌单 ({{ playlists.length }})</h5>
+        <h5 class="mb-3">
+          {{ selectedTags.length > 0 ? `${selectedTags[0]} 歌单` : '推荐歌单' }} 
+          ({{ playlists.length }})
+        </h5>
         <div class="row">
           <div v-for="playlist in playlists" :key="playlist.id" class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
             <div class="card music-card h-100" style="cursor: pointer;" @click="handlePlaylistClick(playlist)">
@@ -186,21 +184,6 @@
         </div>
       </div>
 
-      <!-- 分类歌单 -->
-      <div v-if="categories.length > 0 && selectedType === 'categories'" class="mt-4">
-        <h5 class="mb-3">歌单分类</h5>
-        <div class="row">
-          <div v-for="category in categories" :key="category.id" class="col-6 col-md-3 mb-3">
-            <div class="card text-center">
-              <div class="card-body">
-                <h6 class="card-title">{{ category.name }}</h6>
-                <p class="card-text small text-muted">{{ category.category || '歌单分类' }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 加载状态 -->
       <div v-if="isLoading" class="text-center py-4">
         <div class="spinner-border text-primary" role="status">
@@ -225,7 +208,7 @@
 </template>
 
 <script>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import apiService from '../services/apiService.js'
 import PlaylistDetailComponent from './PlaylistDetailComponent.vue'
 
@@ -235,11 +218,10 @@ export default {
     PlaylistDetailComponent
   },
   setup() {
-    const selectedType = ref('personalized')
-    const selectedCategory = ref('全部')
+    const selectedCategory = ref('')
     const playlists = ref([])
     const categories = ref([])
-    const allCategories = ref([])  // 存储所有分类信息
+    const allCategories = ref([])
     const isLoading = ref(false)
     const hasLoaded = ref(false)
     const errorMessage = ref('')
@@ -274,8 +256,8 @@ export default {
 
     // 分页相关变量
     const currentPage = ref(1)
-    const pageSize = ref(32)  // 每页显示32个歌单
-    const totalPlaylists = ref([])  // 所有歌单数据
+    const pageSize = ref(32)
+    const totalPlaylists = ref([])
 
     // 获取完整分类信息
     const fetchAllCategories = async () => {
@@ -295,25 +277,17 @@ export default {
       errorMessage.value = ''
       totalPlaylists.value = []
       categories.value = []
-      currentPage.value = 1  // 重置到第一页
+      currentPage.value = 1
 
       try {
-        // 如果是分类歌单类型，先获取分类信息
-        if (selectedType.value === 'categories' && allCategories.value.length === 0) {
-          await fetchAllCategories()
-        }
+        // 根据选择的标签决定获取类型
+        const playlistType = selectedTags.value.length > 0 ? 'categories' : 'personalized'
+        const category = selectedTags.value.length > 0 ? selectedTags.value[0] : ''
 
-        // 传递较大的limit参数获取更多歌单
-        const response = await apiService.getHotPlaylists(
-          selectedType.value,
-          selectedCategory.value,
-          9999 // 获取9999个歌单
-        )
+        const response = await apiService.getHotPlaylists(playlistType, category, 9999)
         
         if (response.status === 200) {
-          // 无论什么类型，都作为歌单列表处理
           totalPlaylists.value = response.data || []
-          // 更新当前页数据
           updateCurrentPageData()
           hasLoaded.value = true
         } else {
@@ -324,21 +298,6 @@ export default {
         errorMessage.value = '获取过程中发生错误，请重试'
       } finally {
         isLoading.value = false
-      }
-    }
-
-    // 监听分类变化，自动获取对应分类的歌单
-    watch(selectedCategory, (newCategory, oldCategory) => {
-      if (selectedType.value === 'categories' && newCategory !== oldCategory) {
-        console.log(`分类变化: ${oldCategory} -> ${newCategory}`)
-        fetchHotPlaylists()
-      }
-    })
-
-    // 监听类型变化，如果是分类歌单则获取分类信息
-    const watchSelectedType = () => {
-      if (selectedType.value === 'categories' && allCategories.value.length === 0) {
-        fetchAllCategories()
       }
     }
 
@@ -379,7 +338,7 @@ export default {
     const getPageNumbers = () => {
       const totalPages = Math.ceil(totalPlaylists.value.length / pageSize.value)
       const current = currentPage.value
-      const delta = 2  // 显示当前页前后2页
+      const delta = 2
       const range = []
       
       for (let i = Math.max(2, current - delta); i <= Math.min(totalPages - 1, current + delta); i++) {
@@ -411,15 +370,17 @@ export default {
       selectedPlaylist.value = null
     }
 
-    // 切换标签选择状态
+    // 切换标签选择状态（单选模式）
     const toggleTag = (tag) => {
       const index = selectedTags.value.indexOf(tag)
       if (index > -1) {
+        // 如果点击已选中的标签，则取消选择
         selectedTags.value.splice(index, 1)
       } else {
-        selectedTags.value.push(tag)
+        // 选择新标签，先清空之前的选择
+        selectedTags.value = [tag]
       }
-      updateCategorySelection()
+      // watch监听器会自动触发fetchHotPlaylists()
     }
 
     // 移除标签
@@ -427,38 +388,21 @@ export default {
       const index = selectedTags.value.indexOf(tag)
       if (index > -1) {
         selectedTags.value.splice(index, 1)
-        updateCategorySelection()
-      }
-    }
-
-    // 更新分类选择
-    const updateCategorySelection = () => {
-      if (selectedTags.value.length === 0) {
-        selectedCategory.value = '全部'
-      } else {
-        selectedCategory.value = selectedTags.value.join(' ')
+        // watch监听器会自动触发fetchHotPlaylists()
       }
     }
 
     // 监听标签变化，自动获取对应分类的歌单
     watch(selectedTags, () => {
-      if (selectedType.value === 'categories') {
-        updateCategorySelection()
-      }
-    })
+      fetchHotPlaylists()
+    }, { immediate: false })
 
-    // 监听类型变化
-    watch(selectedType, (newType, oldType) => {
-      if (newType === 'categories' && allCategories.value.length === 0) {
-        fetchAllCategories()
-      }
+    // 组件挂载时默认加载推荐歌单
+    onMounted(() => {
+      fetchHotPlaylists()
     })
-
-    // 初始化加载
-    fetchHotPlaylists()
 
     return {
-      selectedType,
       selectedCategory,
       selectedTags,
       languageTags,

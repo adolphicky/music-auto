@@ -16,39 +16,21 @@
           <!-- 导航标签 -->
           <ul class="nav nav-tabs nav-justified mb-4" id="functionTabs" role="tablist">
             <li class="nav-item" v-for="tab in tabs" :key="tab.id">
-              <button 
-                class="nav-link" 
-                :class="{ active: activeTab === tab.id }"
-                @click="activeTab = tab.id"
-                type="button"
+              <router-link 
+                :to="tab.path"
+                class="nav-link"
+                active-class="active"
+                exact-active-class="active"
               >
                 <i :class="tab.icon" class="me-2"></i>
                 {{ tab.name }}
-              </button>
+              </router-link>
             </li>
           </ul>
 
           <!-- 功能区域 -->
           <div class="tab-content">
-            <!-- 搜索功能 -->
-            <div v-if="activeTab === 'search'" class="tab-pane fade show active">
-              <SearchComponent />
-            </div>
-
-            <!-- 歌单批量下载 -->
-            <div v-if="activeTab === 'playlist-download'" class="tab-pane fade show active">
-              <PlaylistSearchComponent />
-            </div>
-
-            <!-- 歌手批量下载 -->
-            <div v-if="activeTab === 'artist-download'" class="tab-pane fade show active">
-              <ArtistDownloadComponent />
-            </div>
-
-            <!-- 热门歌单 -->
-            <div v-if="activeTab === 'hot-playlists'" class="tab-pane fade show active">
-              <HotPlaylistsComponent />
-            </div>
+            <router-view></router-view>
           </div>
         </div>
 
@@ -68,24 +50,15 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
-import SearchComponent from './components/SearchComponent.vue'
-import PlaylistSearchComponent from './components/PlaylistSearchComponent.vue'
-import ArtistDownloadComponent from './components/ArtistDownloadComponent.vue'
-import HotPlaylistsComponent from './components/HotPlaylistsComponent.vue'
+import { reactive } from 'vue'
 import QRLoginComponent from './components/QRLoginComponent.vue'
 
 export default {
   name: 'App',
   components: {
-    SearchComponent,
-    PlaylistSearchComponent,
-    ArtistDownloadComponent,
-    HotPlaylistsComponent,
     QRLoginComponent
   },
   setup() {
-    const activeTab = ref('search')
     const globalMessage = reactive({
       show: false,
       text: '',
@@ -93,10 +66,11 @@ export default {
     })
 
     const tabs = [
-      { id: 'search', name: '音乐搜索', icon: 'fas fa-search' },
-      { id: 'playlist-download', name: '歌单搜索', icon: 'fas fa-layer-group' },
-      { id: 'artist-download', name: '歌手搜索', icon: 'fas fa-user' },
-      { id: 'hot-playlists', name: '热门歌单', icon: 'fas fa-fire' }
+      { id: 'search', name: '音乐搜索', icon: 'fas fa-search', path: '/search' },
+      { id: 'playlist-download', name: '歌单搜索', icon: 'fas fa-layer-group', path: '/playlist-download' },
+      { id: 'artist-download', name: '歌手搜索', icon: 'fas fa-user', path: '/artist-download' },
+      { id: 'hot-playlists', name: '热门歌单', icon: 'fas fa-fire', path: '/hot-playlists' },
+      { id: 'task-manager', name: '任务管理', icon: 'fas fa-tasks', path: '/task-manager' }
     ]
 
     // 显示全局消息
@@ -116,7 +90,6 @@ export default {
     }
 
     return {
-      activeTab,
       tabs,
       globalMessage,
       showMessage
@@ -126,7 +99,7 @@ export default {
 </script>
 
 <style scoped>
-.tab-pane {
+.tab-content {
   animation: fadeIn 0.3s ease-in;
 }
 
@@ -139,5 +112,15 @@ export default {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.nav-link {
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav-link:hover {
+  text-decoration: none;
 }
 </style>
