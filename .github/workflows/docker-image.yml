@@ -63,7 +63,7 @@ jobs:
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:latest
           # Push事件：添加commit标签
-          ${{ github.event_name == 'push' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, github.sha || '' }}
+          ${{ github.event_name == 'push' && ${{ secrets.DOCKERHUB_USERNAME }}/auto-music:${{ github.sha }} || '' }}
           # Release事件：添加release标签
           ${{ github.event_name == 'release' && env.CLEAN_RELEASE_TAG != '' && format('{0}/auto-music:{1}', secrets.DOCKERHUB_USERNAME, env.CLEAN_RELEASE_TAG) || '' }}
     - name: Prune Docker (Local Cleanup)
